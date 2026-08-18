@@ -2,10 +2,18 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="mobile-web-app-capable"
+    content="yes"
+  >
 
   <title>Mis Escuelas ⚽</title>
 
@@ -131,10 +139,11 @@
       background: #111827;
       color: white;
       cursor: pointer;
+      min-height: 44px;
     }
 
     .btn:active {
-      transform: scale(0.98);
+      transform: scale(.98);
     }
 
     .green {
@@ -183,6 +192,7 @@
 
     .info {
       min-width: 0;
+      flex: 1;
     }
 
     .info b {
@@ -251,7 +261,7 @@
     .modal {
       display: none;
       position: fixed;
-      z-index: 20;
+      z-index: 100;
       inset: 0;
       background: #0008;
       align-items: flex-end;
@@ -290,7 +300,7 @@
       display: flex;
       justify-content: space-around;
       padding: 8px 4px;
-      z-index: 10;
+      z-index: 50;
     }
 
     nav button {
@@ -300,7 +310,7 @@
       font: inherit;
       font-size: 11px;
       cursor: pointer;
-      padding: 5px 12px;
+      padding: 4px 8px;
     }
 
     nav button.active {
@@ -312,6 +322,12 @@
       display: block;
       font-size: 20px;
       margin-bottom: 2px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 30px;
+      color: var(--muted);
     }
 
     @media (min-width: 600px) {
@@ -338,6 +354,7 @@
 
 <body>
 
+
 <header>
 
   <h1>⚽ Mis Escuelas</h1>
@@ -353,6 +370,7 @@
 
   <div id="message"></div>
 
+
   <div class="selector">
 
     <div class="small">
@@ -360,19 +378,20 @@
     </div>
 
     <select id="school">
-      <option value="">
+
+      <option>
         Cargando...
       </option>
+
     </select>
 
   </div>
 
+
   <div id="app">
 
-    <div class="card">
-      <div class="empty">
-        Cargando aplicación...
-      </div>
+    <div class="loading">
+      ⏳ Cargando aplicación...
     </div>
 
   </div>
@@ -382,11 +401,16 @@
 
 <!-- MODAL -->
 
-<div class="modal" id="modal">
+<div
+  class="modal"
+  id="modal"
+>
 
   <div class="sheet">
 
-    <h2 id="modalTitle"></h2>
+    <h2 id="modalTitle">
+      Formulario
+    </h2>
 
     <div id="form"></div>
 
@@ -395,19 +419,17 @@
       <button
         type="button"
         class="btn green"
-        onclick="saveForm()">
-
+        onclick="saveForm()"
+      >
         Guardar
-
       </button>
 
       <button
         type="button"
-        class="btn"
-        onclick="closeModal()">
-
+        class="btn ghost"
+        onclick="closeModal()"
+      >
         Cancelar
-
       </button>
 
     </div>
@@ -424,41 +446,37 @@
   <button
     type="button"
     class="active"
-    onclick="setView('home', this)">
-
+    onclick="setView('home', this)"
+  >
     <span>🏠</span>
     Inicio
-
   </button>
 
 
   <button
     type="button"
-    onclick="setView('players', this)">
-
+    onclick="setView('players', this)"
+  >
     <span>👥</span>
     Jugadores
-
   </button>
 
 
   <button
     type="button"
-    onclick="setView('payments', this)">
-
+    onclick="setView('payments', this)"
+  >
     <span>💰</span>
     Pagos
-
   </button>
 
 
   <button
     type="button"
-    onclick="setView('settings', this)">
-
+    onclick="setView('settings', this)"
+  >
     <span>⚙️</span>
     Opciones
-
   </button>
 
 </nav>
@@ -471,20 +489,18 @@
 
 <script>
 
+
 /* =========================================================
-   CONFIGURACIÓN
+   CONFIGURACIÓN SUPABASE
 ========================================================= */
 
 const SUPABASE_URL =
   "https://inehoqxikbsuhguxxngz.supabase.co";
 
+
 const SUPABASE_KEY =
   "sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h";
 
-
-/* =========================================================
-   SUPABASE
-========================================================= */
 
 const supabaseClient =
   window.supabase.createClient(
@@ -493,22 +509,42 @@ const supabaseClient =
   );
 
 
+console.log(
+  "JAVASCRIPT DE MIS ESCUELAS CARGADO"
+);
+
+
 /* =========================================================
    VARIABLES
 ========================================================= */
 
 let data = {
+
   schools: [],
+
   players: [],
+
   fees: [],
+
   pagos: []
+
 };
 
-let currentView = "home";
 
-let currentSchool = "";
+let currentView =
+  "home";
 
-let editingPlayerId = null;
+
+let currentSchool =
+  "";
+
+
+let editingPlayerId =
+  null;
+
+
+let reportMonth =
+  monthKey();
 
 
 /* =========================================================
@@ -517,11 +553,14 @@ let editingPlayerId = null;
 
 function money(n) {
 
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0
-  }).format(Number(n) || 0);
+  return new Intl.NumberFormat(
+    "es-AR",
+    {
+      style: "currency",
+      currency: "ARS",
+      maximumFractionDigits: 0
+    }
+  ).format(Number(n) || 0);
 
 }
 
@@ -529,56 +568,105 @@ function money(n) {
 function monthKey(d = new Date()) {
 
   return (
+
     d.getFullYear() +
+
     "-" +
-    String(d.getMonth() + 1).padStart(2, "0")
+
+    String(
+      d.getMonth() + 1
+    ).padStart(2, "0")
+
   );
 
 }
 
 
-function monthName(key = monthKey()) {
+function monthName(
+  key = monthKey()
+) {
 
-  const parts = key.split("-");
+  const parts =
+    key.split("-");
 
-  const y = Number(parts[0]);
 
-  const m = Number(parts[1]);
+  const y =
+    Number(parts[0]);
 
-  return new Date(y, m - 1, 1)
-    .toLocaleDateString("es-AR", {
+
+  const m =
+    Number(parts[1]);
+
+
+  return new Date(
+    y,
+    m - 1,
+    1
+  ).toLocaleDateString(
+    "es-AR",
+    {
       month: "long",
       year: "numeric"
-    });
+    }
+  );
 
 }
 
 
 function esc(value) {
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
 
-function showMessage(text, type = "success") {
+function showMessage(
+  text,
+  type = "success"
+) {
 
   const box =
-    document.getElementById("message");
+    document.getElementById(
+      "message"
+    );
+
 
   box.innerHTML =
-    `<div class="${type}">${esc(text)}</div>`;
+    `<div class="${type}">
+      ${esc(text)}
+    </div>`;
 
-  setTimeout(function () {
 
-    box.innerHTML = "";
+  setTimeout(
+    function () {
 
-  }, 4000);
+      box.innerHTML = "";
+
+    },
+    4000
+  );
 
 }
 
@@ -589,13 +677,25 @@ function showMessage(text, type = "success") {
 
 async function loadData() {
 
-  try {
+  console.log(
+    "Cargando datos..."
+  );
 
-    showMessage(
-      "Conectando con Supabase...",
-      "success"
+
+  const app =
+    document.getElementById(
+      "app"
     );
 
+
+  app.innerHTML = `
+    <div class="loading">
+      ⏳ Conectando con Supabase...
+    </div>
+  `;
+
+
+  try {
 
     const schoolsResult =
       await supabaseClient
@@ -603,8 +703,12 @@ async function loadData() {
         .select("*");
 
 
-    if (schoolsResult.error) {
+    if (
+      schoolsResult.error
+    ) {
+
       throw schoolsResult.error;
+
     }
 
 
@@ -614,8 +718,12 @@ async function loadData() {
         .select("*");
 
 
-    if (playersResult.error) {
+    if (
+      playersResult.error
+    ) {
+
       throw playersResult.error;
+
     }
 
 
@@ -625,8 +733,12 @@ async function loadData() {
         .select("*");
 
 
-    if (feesResult.error) {
+    if (
+      feesResult.error
+    ) {
+
       throw feesResult.error;
+
     }
 
 
@@ -636,8 +748,12 @@ async function loadData() {
         .select("*");
 
 
-    if (pagosResult.error) {
+    if (
+      pagosResult.error
+    ) {
+
       throw pagosResult.error;
+
     }
 
 
@@ -657,7 +773,32 @@ async function loadData() {
       pagosResult.data || [];
 
 
+    console.log(
+      "Escuelas:",
+      data.schools
+    );
+
+
+    console.log(
+      "Jugadores:",
+      data.players
+    );
+
+
+    console.log(
+      "Cuotas:",
+      data.fees
+    );
+
+
+    console.log(
+      "Pagos:",
+      data.pagos
+    );
+
+
     prepareSchools();
+
 
     render();
 
@@ -676,29 +817,34 @@ async function loadData() {
     );
 
 
-    document.getElementById("app").innerHTML = `
+    app.innerHTML = `
 
       <div class="card">
 
         <h2>
-          ⚠️ No se pudo conectar
+          ⚠️ Error al conectar
         </h2>
 
         <p>
-          La aplicación no pudo leer los datos.
+          La aplicación no pudo
+          leer los datos de Supabase.
         </p>
 
-        <p class="small">
-          ${esc(error.message || error)}
-        </p>
+        <div class="error">
+
+          ${esc(
+            error.message ||
+            error
+          )}
+
+        </div>
 
         <button
           type="button"
           class="btn blue"
-          onclick="loadData()">
-
+          onclick="loadData()"
+        >
           🔄 Reintentar
-
         </button>
 
       </div>
@@ -717,100 +863,132 @@ async function loadData() {
 function prepareSchools() {
 
   const select =
-    document.getElementById("school");
+    document.getElementById(
+      "school"
+    );
 
 
-  if (!data.schools.length) {
+  if (
+    !data.schools.length
+  ) {
 
     select.innerHTML =
-      `<option value="">Sin escuelas</option>`;
+      `<option value="">
+        Sin escuelas
+      </option>`;
 
-    currentSchool = "";
+
+    currentSchool =
+      "";
+
 
     return;
+
   }
 
 
   select.innerHTML =
     data.schools
-      .map(function(s) {
+      .map(
+        function (s) {
 
-        const name =
-          s.name ||
-          s.nombre ||
-          s.school ||
-          "";
+          const name =
+            s.name ||
+            s.nombre ||
+            s.school ||
+            "";
 
 
-        return `
-          <option value="${esc(name)}">
-            ${esc(name)}
-          </option>
-        `;
+          return `
 
-      })
+            <option
+              value="${esc(name)}"
+            >
+              ${esc(name)}
+            </option>
+
+          `;
+
+        }
+      )
       .join("");
 
 
-  const names =
-    data.schools.map(function(s) {
-
-      return (
-        s.name ||
-        s.nombre ||
-        s.school ||
-        ""
-      );
-
-    });
-
-
-  if (
+  const exists =
     currentSchool &&
-    names.includes(currentSchool)
-  ) {
+    data.schools.some(
+      function (s) {
 
-    select.value = currentSchool;
+        return (
+          (
+            s.name ||
+            s.nombre ||
+            s.school
+          ) ===
+          currentSchool
+        );
+
+      }
+    );
+
+
+  if (exists) {
+
+    select.value =
+      currentSchool;
 
   } else {
 
-    currentSchool = names[0];
+    currentSchool =
+      data.schools[0].name ||
+      data.schools[0].nombre ||
+      data.schools[0].school ||
+      "";
 
-    select.value = currentSchool;
+
+    select.value =
+      currentSchool;
 
   }
 
 
-  select.onchange = function() {
+  select.onchange =
+    function () {
 
-    currentSchool =
-      this.value;
+      currentSchool =
+        this.value;
 
-    render();
 
-  };
+      render();
+
+    };
 
 }
 
 
 /* =========================================================
-   JUGADORES
+   JUGADORES DE LA ESCUELA
 ========================================================= */
 
 function schoolPlayers() {
 
-  return data.players.filter(function(p) {
+  return data.players.filter(
+    function (p) {
 
-    const school =
-      p.school ||
-      p.school_name ||
-      p.escuela ||
-      "";
+      const school =
+        p.school ||
+        p.school_name ||
+        p.escuela ||
+        "";
 
 
-    return school === currentSchool;
+      return (
+        school ===
+        currentSchool
+      );
 
-  });
+    }
+  );
 
 }
 
@@ -818,11 +996,13 @@ function schoolPlayers() {
 function activePlayers() {
 
   return schoolPlayers()
-    .filter(function(p) {
+    .filter(
+      function (p) {
 
-      return p.active !== false;
+        return p.active !== false;
 
-    });
+      }
+    );
 
 }
 
@@ -831,75 +1011,102 @@ function activePlayers() {
    PAGOS
 ========================================================= */
 
-function playerPayment(playerId, key) {
+function playerPayment(
+  playerId,
+  key
+) {
 
-  return data.pagos.find(function(p) {
+  return data.pagos.find(
+    function (p) {
 
-    const pid =
-      p.player_id ||
-      p.playerId;
-
-
-    const month =
-      p.month_key ||
-      p.monthKey;
-
-
-    const school =
-      p.school ||
-      p.escuela ||
-      "";
+      const pid =
+        p.player_id ||
+        p.playerId;
 
 
-    return (
-      String(pid) === String(playerId) &&
-      month === key &&
-      school === currentSchool
-    );
+      const month =
+        p.month_key ||
+        p.monthKey;
 
-  });
+
+      const school =
+        p.school ||
+        p.escuela ||
+        "";
+
+
+      return (
+
+        String(pid) ===
+        String(playerId)
+
+        &&
+
+        month === key
+
+        &&
+
+        school ===
+        currentSchool
+
+      );
+
+    }
+  );
 
 }
 
 
 /* =========================================================
-   CUOTA
+   CUOTA ACTUAL
 ========================================================= */
 
-function currentFee(key = monthKey()) {
+function currentFee(
+  key = monthKey()
+) {
 
   const found =
-    data.fees.find(function(f) {
+    data.fees.find(
+      function (f) {
 
-      const school =
-        f.school ||
-        f.escuela ||
-        f.school_name ||
-        "";
-
-
-      const month =
-        f.month_key ||
-        f.monthKey ||
-        f.mes ||
-        "";
+        const school =
+          f.school ||
+          f.escuela ||
+          f.school_name ||
+          "";
 
 
-      return (
-        school === currentSchool &&
-        month === key
-      );
+        const month =
+          f.month_key ||
+          f.monthKey ||
+          f.mes ||
+          "";
 
-    });
+
+        return (
+
+          school ===
+          currentSchool
+
+          &&
+
+          month === key
+
+        );
+
+      }
+    );
 
 
   if (found) {
 
     return Number(
+
       found.amount ||
       found.monto ||
       found.fee ||
       0
+
     );
 
   }
@@ -918,12 +1125,16 @@ function render() {
 
   if (!currentSchool) {
 
-    document.getElementById("app").innerHTML = `
+    document.getElementById(
+      "app"
+    ).innerHTML = `
 
       <div class="card">
 
         <div class="empty">
+
           No hay ninguna escuela disponible.
+
         </div>
 
       </div>
@@ -935,20 +1146,43 @@ function render() {
   }
 
 
-  if (currentView === "home") {
+  if (
+    currentView ===
+    "home"
+  ) {
+
     home();
+
   }
 
-  else if (currentView === "players") {
+
+  if (
+    currentView ===
+    "players"
+  ) {
+
     players();
+
   }
 
-  else if (currentView === "payments") {
+
+  if (
+    currentView ===
+    "payments"
+  ) {
+
     payments();
+
   }
 
-  else if (currentView === "settings") {
+
+  if (
+    currentView ===
+    "settings"
+  ) {
+
     settings();
+
   }
 
 }
@@ -969,47 +1203,65 @@ function home() {
 
 
   const paid =
-    list.filter(function(p) {
+    list.filter(
+      function (p) {
 
-      return playerPayment(
-        p.id,
-        key
-      );
+        return !!playerPayment(
+          p.id,
+          key
+        );
 
-    }).length;
+      }
+    ).length;
 
 
   const collected =
     data.pagos
-      .filter(function(p) {
+      .filter(
+        function (p) {
 
-        const school =
-          p.school ||
-          p.escuela ||
-          "";
-
-
-        const month =
-          p.month_key ||
-          p.monthKey;
+          const school =
+            p.school ||
+            p.escuela ||
+            "";
 
 
-        return (
-          school === currentSchool &&
-          month === key
-        );
+          const month =
+            p.month_key ||
+            p.monthKey;
 
-      })
-      .reduce(function(total, p) {
 
-        return total +
-          Number(
-            p.amount ||
-            p.monto ||
-            0
+          return (
+
+            school ===
+            currentSchool
+
+            &&
+
+            month === key
+
           );
 
-      }, 0);
+        }
+      )
+      .reduce(
+        function (
+          total,
+          p
+        ) {
+
+          return (
+            total +
+            Number(
+              p.amount ||
+              p.monto ||
+              0
+            )
+          );
+
+        },
+        0
+      );
 
 
   const expected =
@@ -1020,11 +1272,14 @@ function home() {
   const pending =
     Math.max(
       0,
-      expected - collected
+      expected -
+      collected
     );
 
 
-  document.getElementById("app").innerHTML = `
+  document.getElementById(
+    "app"
+  ).innerHTML = `
 
     <div class="grid">
 
@@ -1087,20 +1342,18 @@ function home() {
       <button
         type="button"
         class="btn green"
-        onclick="openPlayer()">
-
+        onclick="openPlayer()"
+      >
         ＋ Agregar jugador
-
       </button>
 
 
       <button
         type="button"
         class="btn blue"
-        onclick="openPayment()">
-
+        onclick="openPayment()"
+      >
         ✓ Registrar pago
-
       </button>
 
     </div>
@@ -1109,10 +1362,14 @@ function home() {
     <div class="card section">
 
       <h2>
-        📅 Cuotas de ${esc(monthName(key))}
+        📅 Cuotas de
+        ${esc(monthName(key))}
       </h2>
 
-      ${pendingRows(list, key)}
+      ${pendingRows(
+        list,
+        key
+      )}
 
     </div>
 
@@ -1120,11 +1377,18 @@ function home() {
     <div class="notice">
 
       💰 Cuota actual:
-      <b>${money(currentFee(key))}</b>
+      <b>
+        ${money(
+          currentFee(key)
+        )}
+      </b>
 
       <br><br>
 
-      Los datos se guardan en Supabase.
+      Escuela seleccionada:
+      <b>
+        ${esc(currentSchool)}
+      </b>
 
     </div>
 
@@ -1137,17 +1401,22 @@ function home() {
    PENDIENTES
 ========================================================= */
 
-function pendingRows(list, key) {
+function pendingRows(
+  list,
+  key
+) {
 
   const pending =
-    list.filter(function(p) {
+    list.filter(
+      function (p) {
 
-      return !playerPayment(
-        p.id,
-        key
-      );
+        return !playerPayment(
+          p.id,
+          key
+        );
 
-    });
+      }
+    );
 
 
   if (!pending.length) {
@@ -1155,7 +1424,10 @@ function pendingRows(list, key) {
     return `
 
       <div class="empty">
-        🎉 Todos los jugadores están al día.
+
+        🎉 Todos los jugadores
+        están al día.
+
       </div>
 
     `;
@@ -1163,49 +1435,52 @@ function pendingRows(list, key) {
   }
 
 
-  return pending.map(function(p) {
+  return pending
+    .map(
+      function (p) {
 
-    return `
+        return `
 
-      <div class="row">
+          <div class="row">
 
-        <div class="info">
+            <div class="info">
 
-          <b>
-            ${esc(p.name)}
-          </b>
+              <b>
+                ${esc(p.name)}
+              </b>
 
-          <span class="small">
-            ${esc(
-              p.category ||
-              "Sin categoría"
-            )}
-          </span>
+              <span class="small">
+                ${esc(
+                  p.category ||
+                  "Sin categoría"
+                )}
+              </span>
 
-        </div>
+            </div>
 
 
-        <button
-          type="button"
-          class="btn green"
-          style="padding:8px 10px"
-          onclick="quickPay('${esc(p.id)}')">
+            <button
+              type="button"
+              class="btn green"
+              style="padding:8px 10px"
+              onclick="quickPay('${esc(p.id)}')"
+            >
+              Pagó
+            </button>
 
-          Pagó
+          </div>
 
-        </button>
+        `;
 
-      </div>
-
-    `;
-
-  }).join("");
+      }
+    )
+    .join("");
 
 }
 
 
 /* =========================================================
-   VISTA JUGADORES
+   JUGADORES
 ========================================================= */
 
 function players() {
@@ -1214,27 +1489,27 @@ function players() {
     schoolPlayers();
 
 
-  document.getElementById("app").innerHTML = `
+  document.getElementById(
+    "app"
+  ).innerHTML = `
 
     <div class="actions">
 
       <button
         type="button"
         class="btn green"
-        onclick="openPlayer()">
-
+        onclick="openPlayer()"
+      >
         ＋ Nuevo jugador
-
       </button>
 
 
       <button
         type="button"
         class="btn ghost"
-        onclick="loadData()">
-
+        onclick="loadData()"
+      >
         🔄 Actualizar
-
       </button>
 
     </div>
@@ -1243,12 +1518,14 @@ function players() {
     <input
       id="search"
       placeholder="🔎 Buscar jugador..."
-      oninput="filterPlayers()">
+      oninput="filterPlayers()"
+    >
 
 
     <div
       class="card section"
-      id="playerList">
+      id="playerList"
+    >
 
       ${playerRows(list)}
 
@@ -1260,7 +1537,7 @@ function players() {
 
 
 /* =========================================================
-   FILAS JUGADORES
+   FILAS DE JUGADORES
 ========================================================= */
 
 function playerRows(list) {
@@ -1270,7 +1547,10 @@ function playerRows(list) {
     return `
 
       <div class="empty">
-        No hay jugadores en esta escuela.
+
+        No hay jugadores
+        en esta escuela.
+
       </div>
 
     `;
@@ -1278,143 +1558,166 @@ function playerRows(list) {
   }
 
 
-  return list.map(function(p) {
+  return list
+    .map(
+      function (p) {
 
-    return `
+        return `
 
-      <div class="row">
+          <div class="row">
 
-        <div class="info">
+            <div class="info">
 
-          <b>
+              <b>
 
-            ${esc(p.name)}
+                ${esc(p.name)}
 
-            ${
-              p.active === false
-              ? `
-                <span class="badge warn">
-                  INACTIVO
-                </span>
-              `
-              : ""
-            }
+                ${
+                  p.active === false
+                    ? `
+                      <span
+                        class="badge warn"
+                      >
+                        INACTIVO
+                      </span>
+                    `
+                    : ""
+                }
 
-          </b>
-
-
-          <span class="small">
-
-            ${esc(
-              p.category ||
-              "Sin categoría"
-            )}
-
-            ·
-
-            ${esc(
-              p.phone ||
-              "Sin teléfono"
-            )}
-
-          </span>
-
-        </div>
+              </b>
 
 
-        <button
-          type="button"
-          class="btn"
-          style="padding:8px 10px"
-          onclick="openPlayer('${esc(p.id)}')">
+              <span class="small">
 
-          Editar
+                ${esc(
+                  p.category ||
+                  "Sin categoría"
+                )}
 
-        </button>
+                ·
 
-      </div>
+                ${esc(
+                  p.phone ||
+                  "Sin teléfono"
+                )}
 
-    `;
+              </span>
 
-  }).join("");
+            </div>
+
+
+            <button
+              type="button"
+              class="btn"
+              style="padding:8px 10px"
+              onclick="openPlayer('${esc(p.id)}')"
+            >
+              Editar
+            </button>
+
+          </div>
+
+        `;
+
+      }
+    )
+    .join("");
 
 }
 
 
 /* =========================================================
-   BUSCAR JUGADORES
+   BUSCADOR
 ========================================================= */
 
 function filterPlayers() {
 
   const input =
-    document.getElementById("search");
-
-
-  if (!input) {
-    return;
-  }
+    document.getElementById(
+      "search"
+    );
 
 
   const q =
-    input.value
-      .toLowerCase()
-      .trim();
+    (
+      input.value ||
+      ""
+    )
+      .toLowerCase();
 
 
   const list =
     schoolPlayers()
-      .filter(function(p) {
+      .filter(
+        function (p) {
 
-        const text =
-          [
-            p.name,
-            p.category,
-            p.phone
-          ]
-          .join(" ")
-          .toLowerCase();
-
-
-        return text.includes(q);
-
-      });
+          const text =
+            [
+              p.name,
+              p.category,
+              p.phone
+            ]
+              .join(" ")
+              .toLowerCase();
 
 
-  document.getElementById("playerList")
-    .innerHTML =
+          return text.includes(q);
+
+        }
+      );
+
+
+  document.getElementById(
+    "playerList"
+  ).innerHTML =
     playerRows(list);
 
 }
 
 
 /* =========================================================
-   ABRIR JUGADOR
+   NUEVO / EDITAR JUGADOR
 ========================================================= */
 
-function openPlayer(id = null) {
+function openPlayer(
+  id = null
+) {
 
-  editingPlayerId = id;
+  editingPlayerId =
+    id;
 
 
-  const player =
+  let player = {};
+
+
+  if (id) {
+
+    player =
+      data.players.find(
+        function (p) {
+
+          return (
+            String(p.id) ===
+            String(id)
+          );
+
+        }
+      ) || {};
+
+  }
+
+
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
     id
-    ? data.players.find(function(p) {
-
-        return String(p.id) === String(id);
-
-      })
-    : {};
+      ? "Editar jugador"
+      : "Nuevo jugador";
 
 
-  document.getElementById("modalTitle")
-    .textContent =
-    id
-    ? "Editar jugador"
-    : "Nuevo jugador";
-
-
-  document.getElementById("form").innerHTML = `
+  document.getElementById(
+    "form"
+  ).innerHTML = `
 
     <div class="field">
 
@@ -1424,7 +1727,10 @@ function openPlayer(id = null) {
 
       <input
         id="f_name"
-        value="${esc(player.name || "")}">
+        value="${esc(
+          player.name || ""
+        )}"
+      >
 
     </div>
 
@@ -1438,7 +1744,10 @@ function openPlayer(id = null) {
       <input
         id="f_category"
         placeholder="Ej. Sub 14"
-        value="${esc(player.category || "")}">
+        value="${esc(
+          player.category || ""
+        )}"
+      >
 
     </div>
 
@@ -1452,7 +1761,10 @@ function openPlayer(id = null) {
       <input
         id="f_birth"
         type="date"
-        value="${esc(player.birth || "")}">
+        value="${esc(
+          player.birth || ""
+        )}"
+      >
 
     </div>
 
@@ -1465,7 +1777,10 @@ function openPlayer(id = null) {
 
       <input
         id="f_tutor"
-        value="${esc(player.tutor || "")}">
+        value="${esc(
+          player.tutor || ""
+        )}"
+      >
 
     </div>
 
@@ -1478,7 +1793,10 @@ function openPlayer(id = null) {
 
       <input
         id="f_phone"
-        value="${esc(player.phone || "")}">
+        value="${esc(
+          player.phone || ""
+        )}"
+      >
 
     </div>
 
@@ -1493,19 +1811,25 @@ function openPlayer(id = null) {
 
         <option
           value="true"
-          ${player.active !== false ? "selected" : ""}>
-
+          ${
+            player.active !== false
+              ? "selected"
+              : ""
+          }
+        >
           Activo
-
         </option>
 
 
         <option
           value="false"
-          ${player.active === false ? "selected" : ""}>
-
+          ${
+            player.active === false
+              ? "selected"
+              : ""
+          }
+        >
           Inactivo
-
         </option>
 
       </select>
@@ -1527,9 +1851,9 @@ function openPlayer(id = null) {
 async function savePlayer() {
 
   const name =
-    document.getElementById("f_name")
-      .value
-      .trim();
+    document.getElementById(
+      "f_name"
+    ).value.trim();
 
 
   if (!name) {
@@ -1548,52 +1872,63 @@ async function savePlayer() {
     name: name,
 
     category:
-      document.getElementById("f_category")
-        .value
-        .trim(),
+      document.getElementById(
+        "f_category"
+      ).value.trim(),
 
     birth:
-      document.getElementById("f_birth")
-        .value || null,
+      document.getElementById(
+        "f_birth"
+      ).value || null,
 
     tutor:
-      document.getElementById("f_tutor")
-        .value
-        .trim(),
+      document.getElementById(
+        "f_tutor"
+      ).value.trim(),
 
     phone:
-      document.getElementById("f_phone")
-        .value
-        .trim(),
+      document.getElementById(
+        "f_phone"
+      ).value.trim(),
 
     school:
       currentSchool,
 
     active:
-      document.getElementById("f_active")
-        .value === "true"
+      document.getElementById(
+        "f_active"
+      ).value === "true"
 
   };
 
 
   try {
 
-    if (editingPlayerId) {
+    if (
+      editingPlayerId
+    ) {
 
       const result =
         await supabaseClient
           .from("players")
-          .update(playerData)
-          .eq("id", editingPlayerId);
+          .update(
+            playerData
+          )
+          .eq(
+            "id",
+            editingPlayerId
+          );
 
 
-      if (result.error) {
+      if (
+        result.error
+      ) {
+
         throw result.error;
+
       }
 
-    }
-
-    else {
+    } else {
 
       playerData.id =
         "id_" +
@@ -1607,17 +1942,24 @@ async function savePlayer() {
       const result =
         await supabaseClient
           .from("players")
-          .insert(playerData);
+          .insert(
+            playerData
+          );
 
 
-      if (result.error) {
+      if (
+        result.error
+      ) {
+
         throw result.error;
+
       }
 
     }
 
 
     closeModal();
+
 
     await loadData();
 
@@ -1632,9 +1974,13 @@ async function savePlayer() {
 
     console.error(error);
 
+
     alert(
       "No se pudo guardar el jugador:\n\n" +
-      error.message
+      (
+        error.message ||
+        error
+      )
     );
 
   }
@@ -1643,7 +1989,7 @@ async function savePlayer() {
 
 
 /* =========================================================
-   VISTA PAGOS
+   PAGOS
 ========================================================= */
 
 function payments() {
@@ -1652,7 +1998,9 @@ function payments() {
     monthKey();
 
 
-  document.getElementById("app").innerHTML = `
+  document.getElementById(
+    "app"
+  ).innerHTML = `
 
     <div class="card">
 
@@ -1666,7 +2014,8 @@ function payments() {
           id="paymentMonth"
           type="month"
           value="${key}"
-          onchange="renderPayments()">
+          onchange="renderPayments()"
+        >
 
       </div>
 
@@ -1690,17 +2039,18 @@ function payments() {
 function renderPayments() {
 
   const input =
-    document.getElementById("paymentMonth");
-
-
-  if (!input) {
-    return;
-  }
+    document.getElementById(
+      "paymentMonth"
+    );
 
 
   const key =
-    input.value ||
-    monthKey();
+    input
+      ? (
+          input.value ||
+          monthKey()
+        )
+      : monthKey();
 
 
   const list =
@@ -1708,141 +2058,144 @@ function renderPayments() {
 
 
   const rows =
-    list.map(function(p) {
+    list
+      .map(
+        function (p) {
 
-      const payment =
-        playerPayment(
-          p.id,
-          key
-        );
+          const payment =
+            playerPayment(
+              p.id,
+              key
+            );
 
 
-      if (payment) {
+          if (payment) {
 
-        return `
+            return `
 
-          <div class="row">
+              <div class="row">
 
-            <div class="info">
+                <div class="info">
 
-              <b>
-                ${esc(p.name)}
-              </b>
+                  <b>
+                    ${esc(p.name)}
+                  </b>
 
-              <span class="small">
+                  <span class="small">
 
-                ${money(
-                  payment.amount ||
-                  payment.monto ||
-                  0
-                )}
+                    ${money(
+                      payment.amount ||
+                      payment.monto ||
+                      0
+                    )}
 
-                ·
+                    ·
 
-                ${esc(
-                  payment.method ||
-                  payment.medio ||
-                  "Pago"
-                )}
+                    ${esc(
+                      payment.method ||
+                      payment.medio ||
+                      "Pago"
+                    )}
 
-              </span>
+                  </span>
+
+                </div>
+
+
+                <span
+                  class="badge paid"
+                >
+                  PAGADO
+                </span>
+
+              </div>
+
+            `;
+
+          }
+
+
+          return `
+
+            <div class="row">
+
+              <div class="info">
+
+                <b>
+                  ${esc(p.name)}
+                </b>
+
+                <span class="small">
+                  Sin pago registrado
+                </span>
+
+              </div>
+
+
+              <button
+                type="button"
+                class="btn green"
+                style="padding:8px 10px"
+                onclick="quickPay('${esc(p.id)}','${key}')"
+              >
+                Pagó
+              </button>
 
             </div>
 
+          `;
 
-            <span class="badge paid">
-              PAGADO
-            </span>
+        }
+      )
+      .join("");
 
-          </div>
 
-        `;
+  document.getElementById(
+    "paymentsBody"
+  ).innerHTML = `
 
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn blue"
+        onclick="openPayment(null,'${key}')"
+      >
+        ＋ Registrar pago
+      </button>
+
+
+      <button
+        type="button"
+        class="btn ghost"
+        onclick="loadData()"
+      >
+        🔄 Actualizar
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2 style="margin-top:0">
+
+        💰 Pagos ·
+        ${esc(monthName(key))}
+
+      </h2>
+
+      ${
+        rows ||
+
+        `<div class="empty">
+          No hay jugadores.
+        </div>`
       }
 
+    </div>
 
-      return `
-
-        <div class="row">
-
-          <div class="info">
-
-            <b>
-              ${esc(p.name)}
-            </b>
-
-            <span class="small">
-              Sin pago registrado
-            </span>
-
-          </div>
-
-
-          <button
-            type="button"
-            class="btn green"
-            style="padding:8px 10px"
-            onclick="quickPay('${esc(p.id)}','${key}')">
-
-            Pagó
-
-          </button>
-
-        </div>
-
-      `;
-
-    }).join("");
-
-
-  document.getElementById("paymentsBody")
-    .innerHTML = `
-
-      <div class="actions">
-
-        <button
-          type="button"
-          class="btn blue"
-          onclick="openPayment(null,'${key}')">
-
-          ＋ Registrar pago
-
-        </button>
-
-
-        <button
-          type="button"
-          class="btn ghost"
-          onclick="loadData()">
-
-          🔄 Actualizar
-
-        </button>
-
-      </div>
-
-
-      <div class="card">
-
-        <h2 style="margin-top:0">
-
-          💰 Pagos ·
-          ${esc(monthName(key))}
-
-        </h2>
-
-        ${
-          rows ||
-          `
-            <div class="empty">
-              No hay jugadores.
-            </div>
-          `
-        }
-
-      </div>
-
-    `;
+  `;
 
 }
 
@@ -1872,13 +2225,21 @@ async function quickPay(
   }
 
 
+  const amount =
+    currentFee(key);
+
+
   const player =
-    data.players.find(function(p) {
+    data.players.find(
+      function (p) {
 
-      return String(p.id) ===
-        String(playerId);
+        return (
+          String(p.id) ===
+          String(playerId)
+        );
 
-    });
+      }
+    );
 
 
   if (!player) {
@@ -1912,7 +2273,7 @@ async function quickPay(
       key,
 
     amount:
-      currentFee(key),
+      amount,
 
     method:
       "Efectivo",
@@ -1931,11 +2292,17 @@ async function quickPay(
     const result =
       await supabaseClient
         .from("pagos")
-        .insert(payment);
+        .insert(
+          payment
+        );
 
 
-    if (result.error) {
+    if (
+      result.error
+    ) {
+
       throw result.error;
+
     }
 
 
@@ -1952,9 +2319,13 @@ async function quickPay(
 
     console.error(error);
 
+
     alert(
       "No se pudo registrar el pago:\n\n" +
-      error.message
+      (
+        error.message ||
+        error
+      )
     );
 
   }
@@ -1963,7 +2334,7 @@ async function quickPay(
 
 
 /* =========================================================
-   ABRIR PAGO
+   FORMULARIO PAGO
 ========================================================= */
 
 function openPayment(
@@ -1975,118 +2346,128 @@ function openPayment(
     activePlayers();
 
 
-  document.getElementById("modalTitle")
-    .textContent =
+  document.getElementById(
+    "modalTitle"
+  ).textContent =
     "Registrar pago";
 
 
-  document.getElementById("form")
-    .innerHTML = `
+  document.getElementById(
+    "form"
+  ).innerHTML = `
 
-      <div class="field">
+    <div class="field">
 
-        <label>
-          Jugador *
-        </label>
+      <label>
+        Jugador *
+      </label>
 
-        <select id="f_player">
+      <select id="f_player">
 
-          ${list.map(function(p) {
+        ${
+          list
+            .map(
+              function (p) {
 
-            return `
+                return `
 
-              <option
-                value="${esc(p.id)}"
-                ${
-                  String(p.id) ===
-                  String(playerId)
-                  ? "selected"
-                  : ""
-                }>
+                  <option
+                    value="${esc(p.id)}"
+                    ${
+                      String(p.id) ===
+                      String(playerId)
+                        ? "selected"
+                        : ""
+                    }
+                  >
+                    ${esc(p.name)}
+                  </option>
 
-                ${esc(p.name)}
+                `;
 
-              </option>
+              }
+            )
+            .join("")
+        }
 
-            `;
+      </select>
 
-          }).join("")}
-
-        </select>
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Mes
-        </label>
-
-        <input
-          id="f_month"
-          type="month"
-          value="${key}">
-
-      </div>
+    </div>
 
 
-      <div class="field">
+    <div class="field">
 
-        <label>
-          Importe
-        </label>
+      <label>
+        Mes
+      </label>
 
-        <input
-          id="f_amount"
-          type="number"
-          value="${currentFee(key)}">
+      <input
+        id="f_month"
+        type="month"
+        value="${key}"
+      >
 
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Medio de pago
-        </label>
-
-        <select id="f_method">
-
-          <option>
-            Efectivo
-          </option>
-
-          <option>
-            Transferencia
-          </option>
-
-          <option>
-            Mercado Pago
-          </option>
-
-          <option>
-            Otro
-          </option>
-
-        </select>
-
-      </div>
+    </div>
 
 
-      <div class="field">
+    <div class="field">
 
-        <label>
-          Observación
-        </label>
+      <label>
+        Importe
+      </label>
 
-        <input
-          id="f_note"
-          placeholder="Opcional">
+      <input
+        id="f_amount"
+        type="number"
+        value="${currentFee(key)}"
+      >
 
-      </div>
+    </div>
 
-    `;
+
+    <div class="field">
+
+      <label>
+        Medio de pago
+      </label>
+
+      <select id="f_method">
+
+        <option>
+          Efectivo
+        </option>
+
+        <option>
+          Transferencia
+        </option>
+
+        <option>
+          Mercado Pago
+        </option>
+
+        <option>
+          Otro
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Observación
+      </label>
+
+      <input
+        id="f_note"
+        placeholder="Opcional"
+      >
+
+    </div>
+
+  `;
 
 
   showModal();
@@ -2100,17 +2481,15 @@ function openPayment(
 
 async function saveForm() {
 
-  const playerField =
-    document.getElementById("f_player");
-
-
-  const categoryField =
-    document.getElementById("f_category");
+  const playerForm =
+    document.getElementById(
+      "f_category"
+    );
 
 
   if (
     editingPlayerId !== null ||
-    categoryField
+    playerForm
   ) {
 
     await savePlayer();
@@ -2120,10 +2499,44 @@ async function saveForm() {
   }
 
 
-  if (!playerField) {
+  const playerElement =
+    document.getElementById(
+      "f_player"
+    );
+
+
+  const monthElement =
+    document.getElementById(
+      "f_month"
+    );
+
+
+  const amountElement =
+    document.getElementById(
+      "f_amount"
+    );
+
+
+  const methodElement =
+    document.getElementById(
+      "f_method"
+    );
+
+
+  const noteElement =
+    document.getElementById(
+      "f_note"
+    );
+
+
+  if (
+    !playerElement ||
+    !monthElement ||
+    !amountElement
+  ) {
 
     alert(
-      "No se pudo abrir el formulario."
+      "No se encontró el formulario de pago."
     );
 
     return;
@@ -2132,30 +2545,25 @@ async function saveForm() {
 
 
   const playerId =
-    playerField.value;
+    playerElement.value;
 
 
   const key =
-    document.getElementById("f_month")
-      .value;
+    monthElement.value;
 
 
   const amount =
     Number(
-      document.getElementById("f_amount")
-        .value
+      amountElement.value
     );
 
 
   const method =
-    document.getElementById("f_method")
-      .value;
+    methodElement.value;
 
 
   const note =
-    document.getElementById("f_note")
-      .value
-      .trim();
+    noteElement.value.trim();
 
 
   if (
@@ -2228,15 +2636,22 @@ async function saveForm() {
     const result =
       await supabaseClient
         .from("pagos")
-        .insert(payment);
+        .insert(
+          payment
+        );
 
 
-    if (result.error) {
+    if (
+      result.error
+    ) {
+
       throw result.error;
+
     }
 
 
     closeModal();
+
 
     await loadData();
 
@@ -2251,9 +2666,13 @@ async function saveForm() {
 
     console.error(error);
 
+
     alert(
       "No se pudo guardar el pago:\n\n" +
-      error.message
+      (
+        error.message ||
+        error
+      )
     );
 
   }
@@ -2271,108 +2690,113 @@ function settings() {
     monthKey();
 
 
-  document.getElementById("app")
-    .innerHTML = `
+  document.getElementById(
+    "app"
+  ).innerHTML = `
 
-      <div class="card">
+    <div class="card">
 
-        <h2>
-          ⚙️ Configuración
-        </h2>
-
-
-        <div class="field">
-
-          <label>
-            Cuota de ${esc(monthName(key))}
-          </label>
-
-          <input
-            id="fee"
-            type="number"
-            value="${currentFee(key)}">
-
-        </div>
+      <h2>
+        ⚙️ Configuración
+      </h2>
 
 
-        <button
-          type="button"
-          class="btn green"
-          style="width:100%"
-          onclick="saveFee()">
+      <div class="field">
 
-          Guardar cuota
+        <label>
+          Cuota de
+          ${esc(monthName(key))}
+        </label>
 
-        </button>
+        <input
+          id="fee"
+          type="number"
+          value="${currentFee(key)}"
+        >
 
       </div>
 
 
-      <div class="card">
+      <button
+        type="button"
+        class="btn green"
+        style="width:100%"
+        onclick="saveFee()"
+      >
+        Guardar cuota
+      </button>
 
-        <h2>
-          🏫 Escuelas
-        </h2>
-
-        ${
-          data.schools.map(function(s) {
-
-            const name =
-              s.name ||
-              s.nombre ||
-              s.school ||
-              "";
+    </div>
 
 
-            return `
+    <div class="card">
 
-              <div class="row">
+      <h2>
+        🏫 Escuelas
+      </h2>
 
-                <div class="info">
+      ${
+        data.schools
+          .map(
+            function (s) {
 
-                  <b>
-                    ${esc(name)}
-                  </b>
+              const name =
+                s.name ||
+                s.nombre ||
+                s.school ||
+                "";
+
+
+              return `
+
+                <div class="row">
+
+                  <div class="info">
+
+                    <b>
+                      ${esc(name)}
+                    </b>
+
+                  </div>
 
                 </div>
 
-              </div>
+              `;
 
-            `;
+            }
+          )
+          .join("")
+      }
 
-          }).join("")
-        }
-
-      </div>
-
-
-      <div class="card">
-
-        <h2>
-          🔄 Sincronización
-        </h2>
-
-        <p class="small">
-
-          Los datos se leen y guardan
-          directamente en Supabase.
-
-        </p>
+    </div>
 
 
-        <button
-          type="button"
-          class="btn blue"
-          style="width:100%"
-          onclick="loadData()">
+    <div class="card">
 
-          🔄 Actualizar datos
+      <h2>
+        🔄 Sincronización
+      </h2>
 
-        </button>
+      <p class="small">
 
-      </div>
+        Los datos se leen y guardan
+        directamente en Supabase.
 
-    `;
+      </p>
+
+
+      <button
+        type="button"
+        class="btn blue"
+        style="width:100%"
+        onclick="loadData()"
+      >
+        🔄 Actualizar datos
+      </button>
+
+    </div>
+
+  `;
 
 }
 
@@ -2383,17 +2807,23 @@ function settings() {
 
 async function saveFee() {
 
-  const input =
-    document.getElementById("fee");
+  const feeElement =
+    document.getElementById(
+      "fee"
+    );
 
 
-  if (!input) {
+  if (!feeElement) {
+
     return;
+
   }
 
 
   const amount =
-    Number(input.value);
+    Number(
+      feeElement.value
+    );
 
 
   if (!amount) {
@@ -2414,28 +2844,36 @@ async function saveFee() {
   try {
 
     const existing =
-      data.fees.find(function(f) {
+      data.fees.find(
+        function (f) {
 
-        const school =
-          f.school ||
-          f.escuela ||
-          f.school_name ||
-          "";
-
-
-        const month =
-          f.month_key ||
-          f.monthKey ||
-          f.mes ||
-          "";
+          const school =
+            f.school ||
+            f.escuela ||
+            f.school_name ||
+            "";
 
 
-        return (
-          school === currentSchool &&
-          month === key
-        );
+          const month =
+            f.month_key ||
+            f.monthKey ||
+            f.mes ||
+            "";
 
-      });
+
+          return (
+
+            school ===
+            currentSchool
+
+            &&
+
+            month === key
+
+          );
+
+        }
+      );
 
 
     if (existing) {
@@ -2444,18 +2882,24 @@ async function saveFee() {
         await supabaseClient
           .from("fees")
           .update({
-            amount: amount
+            amount:
+              amount
           })
-          .eq("id", existing.id);
+          .eq(
+            "id",
+            existing.id
+          );
 
 
-      if (result.error) {
+      if (
+        result.error
+      ) {
+
         throw result.error;
+
       }
 
-    }
-
-    else {
+    } else {
 
       const result =
         await supabaseClient
@@ -2478,8 +2922,12 @@ async function saveFee() {
           });
 
 
-      if (result.error) {
+      if (
+        result.error
+      ) {
+
         throw result.error;
+
       }
 
     }
@@ -2498,9 +2946,13 @@ async function saveFee() {
 
     console.error(error);
 
+
     alert(
       "No se pudo guardar la cuota:\n\n" +
-      error.message
+      (
+        error.message ||
+        error
+      )
     );
 
   }
@@ -2514,11 +2966,11 @@ async function saveFee() {
 
 function setView(
   view,
-  button = null
+  button
 ) {
 
   console.log(
-    "CAMBIANDO VISTA:",
+    "Cambiando vista:",
     view
   );
 
@@ -2528,17 +2980,25 @@ function setView(
 
 
   document
-    .querySelectorAll("nav button")
-    .forEach(function(b) {
+    .querySelectorAll(
+      "nav button"
+    )
+    .forEach(
+      function (b) {
 
-      b.classList.remove("active");
+        b.classList.remove(
+          "active"
+        );
 
-    });
+      }
+    );
 
 
   if (button) {
 
-    button.classList.add("active");
+    button.classList.add(
+      "active"
+    );
 
   }
 
@@ -2555,8 +3015,12 @@ function setView(
 function showModal() {
 
   document
-    .getElementById("modal")
-    .classList.add("show");
+    .getElementById(
+      "modal"
+    )
+    .classList.add(
+      "show"
+    );
 
 }
 
@@ -2564,8 +3028,12 @@ function showModal() {
 function closeModal() {
 
   document
-    .getElementById("modal")
-    .classList.remove("show");
+    .getElementById(
+      "modal"
+    )
+    .classList.remove(
+      "show"
+    );
 
 
   editingPlayerId =
@@ -2575,59 +3043,14 @@ function closeModal() {
 
 
 /* =========================================================
-   HACER FUNCIONES GLOBALES
+   ARRANQUE
 ========================================================= */
-
-/*
-   IMPORTANTE:
-
-   Los botones HTML usan onclick.
-   Por eso dejamos estas funciones
-   disponibles en window.
-*/
-
-window.setView = setView;
-
-window.openPlayer = openPlayer;
-
-window.openPayment = openPayment;
-
-window.saveForm = saveForm;
-
-window.closeModal = closeModal;
-
-window.quickPay = quickPay;
-
-window.loadData = loadData;
-
-window.renderPayments = renderPayments;
-
-window.filterPlayers = filterPlayers;
-
-window.saveFee = saveFee;
-
-
-/* =========================================================
-   INICIO
-========================================================= */
-
-console.log(
-  "JAVASCRIPT DE MIS ESCUELAS CARGADO"
-);
-
-console.log(
-  "setView disponible:",
-  typeof window.setView
-);
-
-console.log(
-  "openPlayer disponible:",
-  typeof window.openPlayer
-);
 
 loadData();
 
+
 </script>
+
 
 </body>
 
