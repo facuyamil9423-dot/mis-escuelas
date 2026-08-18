@@ -2187,15 +2187,29 @@ function closeModal() {
   editingPlayerId = null;
 }
 
+/* =========================================================
+   HACER DISPONIBLES LAS FUNCIONES PARA LOS BOTONES
+========================================================= */
+
+window.setView = setView;
+window.openPlayer = openPlayer;
+window.openPayment = openPayment;
+window.saveForm = saveForm;
+window.closeModal = closeModal;
+window.quickPay = quickPay;
+window.filterPlayers = filterPlayers;
+window.loadData = loadData;
+window.saveFee = saveFee;
+
 
 /* =========================================================
    INICIO DE LA APLICACIÓN
 ========================================================= */
 
 loadData();
-loadData();
 
 });
+
 </script>
 
 </body>
