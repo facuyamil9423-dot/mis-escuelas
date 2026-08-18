@@ -11,7 +11,7 @@
 <style>
 :root{
   --bg:#f3f4f6;
-  --card:#fff;
+  --card:#ffffff;
   --text:#111827;
   --muted:#6b7280;
   --green:#15803d;
@@ -228,6 +228,26 @@ input{
   margin-top:12px;
 }
 
+.success{
+  background:#dcfce7;
+  border:1px solid #86efac;
+  color:#166534;
+  border-radius:14px;
+  padding:12px;
+  font-size:13px;
+  margin-top:12px;
+}
+
+.error{
+  background:#fee2e2;
+  border:1px solid #fca5a5;
+  color:#991b1b;
+  border-radius:14px;
+  padding:12px;
+  font-size:13px;
+  margin-top:12px;
+}
+
 .modal{
   display:none;
   position:fixed;
@@ -356,6 +376,11 @@ nav span{
   margin:14px 0;
 }
 
+.status{
+  font-size:12px;
+  margin-top:10px;
+}
+
 @media(min-width:600px){
 
   .modal{
@@ -388,13 +413,22 @@ nav span{
 <main>
 
   <div class="selector">
-    <div class="small">ESCUELA / SEDE</div>
+
+    <div class="small">
+      ESCUELA / SEDE
+    </div>
+
     <select id="school"></select>
+
+    <div id="connectionStatus" class="status"></div>
+
   </div>
 
   <div id="app"></div>
 
 </main>
+
+<!-- MODAL -->
 
 <div class="modal" id="modal">
 
@@ -405,59 +439,123 @@ nav span{
     <div id="form"></div>
 
     <div class="actions">
-      <button class="btn green" onclick="saveForm()">Guardar</button>
-      <button class="btn" onclick="closeModal()">Cancelar</button>
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="saveForm()">
+        Guardar
+      </button>
+
+      <button
+        type="button"
+        class="btn"
+        onclick="closeModal()">
+        Cancelar
+      </button>
+
     </div>
 
   </div>
 
 </div>
 
+<!-- NAVEGACIÓN -->
+
 <nav>
 
-  <button type="button" class="active" onclick="setView('home',this)">
+  <button
+    type="button"
+    class="active"
+    onclick="setView('home',this)">
     <span>🏠</span>
     Inicio
   </button>
 
-  <button type="button" onclick="setView('players',this)">
+  <button
+    type="button"
+    onclick="setView('players',this)">
     <span>👥</span>
     Jugadores
   </button>
 
-  <button type="button" onclick="setView('payments',this)">
+  <button
+    type="button"
+    onclick="setView('payments',this)">
     <span>💰</span>
     Cuotas
   </button>
 
-  <button type="button" onclick="setView('reports',this)">
+  <button
+    type="button"
+    onclick="setView('reports',this)">
     <span>📊</span>
     Reportes
   </button>
 
-  <button type="button" onclick="setView('settings',this)">
+  <button
+    type="button"
+    onclick="setView('settings',this)">
     <span>⚙️</span>
     Opciones
   </button>
 
 </nav>
 
-<script>
-/* =========================================================
-   CONFIGURACIÓN
-   ========================================================= */
 
-const SUPABASE_URL = 'https://inehoqxikbsuhguxxngz.supabase.co';
+<!-- =====================================================
+     SUPABASE
+===================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL =
+  'https://inehoqxikbsuhguxxngz.supabase.co';
 
 const SUPABASE_KEY =
   'sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h';
 
+/*
+  ESTA ES LA PARTE QUE ANTES TE FALTABA.
 
-/* =========================================================
+  createClient pertenece a supabase-js.
+*/
+
+let supabaseClient = null;
+
+try {
+
+  if (
+    window.supabase &&
+    typeof window.supabase.createClient === 'function'
+  ) {
+
+    supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
+  }
+
+} catch(error) {
+
+  console.error(
+    'Error inicializando Supabase:',
+    error
+  );
+
+}
+
+
+/* =====================================================
    DATOS LOCALES
-   ========================================================= */
+===================================================== */
 
 const KEY = 'misEscuelas_v3';
+
 const OLD_KEY = 'misEscuelas_v2';
 
 const DEFAULT_SCHOOLS = [
@@ -466,92 +564,148 @@ const DEFAULT_SCHOOLS = [
   'Nueva Escuela'
 ];
 
-let data;
-
-try {
-
-  data = JSON.parse(localStorage.getItem(KEY) || 'null');
-
-} catch(e) {
-
-  console.error('Error leyendo datos locales:', e);
-  data = null;
-
-}
+let data =
+  JSON.parse(
+    localStorage.getItem(KEY) || 'null'
+  );
 
 if(!data){
 
-  let old = null;
+  const old =
+    JSON.parse(
+      localStorage.getItem(OLD_KEY) || 'null'
+    );
 
-  try {
-    old = JSON.parse(localStorage.getItem(OLD_KEY) || 'null');
-  } catch(e) {
-    old = null;
-  }
+  data =
+    old || {
+      schools:DEFAULT_SCHOOLS,
+      players:[],
+      payments:[],
+      expenses:[],
+      fees:{},
+      feeHistory:{}
+    };
 
-  data = old || {
-    schools: DEFAULT_SCHOOLS,
-    players: [],
-    payments: [],
-    expenses: [],
-    fees: {},
-    feeHistory: {}
-  };
+}else{
+
+  data.schools =
+    data.schools || [];
+
+  data.players =
+    data.players || [];
+
+  data.payments =
+    data.payments || [];
+
+  data.expenses =
+    data.expenses || [];
+
+  data.fees =
+    data.fees || {};
+
+  data.feeHistory =
+    data.feeHistory || {};
 
 }
 
-data.schools = [
-  ...new Set([
-    ...DEFAULT_SCHOOLS,
-    ...(data.schools || [])
-  ])
-];
+data.schools =
+  [
+    ...new Set(
+      [
+        ...DEFAULT_SCHOOLS,
+        ...(data.schools || [])
+      ]
+    )
+  ];
 
-data.players = data.players || [];
-data.payments = data.payments || [];
-data.expenses = data.expenses || [];
-data.fees = data.fees || {};
-data.feeHistory = data.feeHistory || {};
+data.players =
+  data.players || [];
+
+data.payments =
+  data.payments || [];
+
+data.expenses =
+  data.expenses || [];
+
+data.fees =
+  data.fees || {};
+
+data.feeHistory =
+  data.feeHistory || {};
+
+localStorage.setItem(
+  KEY,
+  JSON.stringify(data)
+);
 
 
-/* =========================================================
+/* =====================================================
    VARIABLES
-   ========================================================= */
+===================================================== */
 
 let currentView = 'home';
+
 let editId = null;
+
 let formType = null;
+
 let reportMonth = monthKey();
 
-const school = document.getElementById('school');
+let showInactive = false;
+
+const school =
+  document.getElementById('school');
 
 
-/* =========================================================
+/* =====================================================
    FUNCIONES GENERALES
-   ========================================================= */
+===================================================== */
 
 const money = n =>
-  new Intl.NumberFormat('es-AR',{
-    style:'currency',
-    currency:'ARS',
-    maximumFractionDigits:0
-  }).format(Number(n) || 0);
 
-
-const esc = s =>
-  String(s ?? '').replace(
-    /[&<>"']/g,
-    m => ({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#39;'
-    }[m])
+  new Intl.NumberFormat(
+    'es-AR',
+    {
+      style:'currency',
+      currency:'ARS',
+      maximumFractionDigits:0
+    }
+  ).format(
+    Number(n) || 0
   );
 
 
-const attr = s => esc(s);
+const esc = s =>
+
+  String(s ?? '')
+    .replace(
+      /[&<>"']/g,
+      m => ({
+        '&':'&amp;',
+        '<':'&lt;',
+        '>':'&gt;',
+        '"':'&quot;',
+        "'":'&#39;'
+      }[m])
+    );
+
+
+const attr = s =>
+  esc(s);
+
+
+function id(){
+
+  return (
+    'id_' +
+    Date.now() +
+    '_' +
+    Math.random()
+      .toString(36)
+      .slice(2)
+  );
+
+}
 
 
 function persist(){
@@ -564,53 +718,129 @@ function persist(){
 }
 
 
-function id(){
+function monthKey(
+  d = new Date()
+){
 
-  return 'id_' +
-    Date.now() +
-    '_' +
-    Math.random().toString(36).slice(2);
+  return (
 
-}
+    d.getFullYear() +
+    '-' +
+    String(
+      d.getMonth()+1
+    ).padStart(2,'0')
 
-
-function monthKey(d = new Date()){
-
-  return `${d.getFullYear()}-${String(
-    d.getMonth()+1
-  ).padStart(2,'0')}`;
+  );
 
 }
 
 
-function monthName(key = monthKey()){
+function monthName(
+  key = monthKey()
+){
 
-  let [y,m] = key.split('-').map(Number);
+  const parts =
+    key.split('-')
+      .map(Number);
 
-  return new Date(y,m-1,1)
-    .toLocaleDateString('es-AR',{
+  const y = parts[0];
+
+  const m = parts[1];
+
+  return new Date(
+    y,
+    m-1,
+    1
+  ).toLocaleDateString(
+    'es-AR',
+    {
       month:'long',
       year:'numeric'
-    });
+    }
+  );
 
 }
 
+
+/* =====================================================
+   ESCUELA
+===================================================== */
 
 function currentSchool(){
 
-  return data.schools[
-    Number(school.value) || 0
-  ];
+  return (
+    data.schools[
+      Number(school.value) || 0
+    ]
+  );
 
 }
 
+
+function init(){
+
+  school.innerHTML =
+    data.schools
+      .map(
+        (s,i) =>
+          `<option value="${i}">
+            ${esc(s)}
+          </option>`
+      )
+      .join('');
+
+  school.onchange =
+    render;
+
+  updateConnectionStatus();
+
+  render();
+
+}
+
+
+function updateConnectionStatus(){
+
+  const el =
+    document.getElementById(
+      'connectionStatus'
+    );
+
+  if(!el)return;
+
+  if(supabaseClient){
+
+    el.innerHTML =
+      '🟢 Supabase conectado';
+
+    el.style.color =
+      '#166534';
+
+  }else{
+
+    el.innerHTML =
+      '🟡 Modo local';
+
+    el.style.color =
+      '#92400e';
+
+  }
+
+}
+
+
+/* =====================================================
+   JUGADORES
+===================================================== */
 
 function ps(){
 
   return data.players.filter(
+
     p =>
       p.school === currentSchool() &&
       p.active !== false
+
   );
 
 }
@@ -619,18 +849,26 @@ function ps(){
 function allSchoolPlayers(){
 
   return data.players.filter(
-    p => p.school === currentSchool()
+
+    p =>
+      p.school === currentSchool()
+
   );
 
 }
 
+
+/* =====================================================
+   CUOTAS
+===================================================== */
 
 function fee(
   s = currentSchool(),
   key = monthKey()
 ){
 
-  const h = data.feeHistory[s] || {};
+  const h =
+    data.feeHistory[s] || {};
 
   return Number(
     h[key] ??
@@ -665,10 +903,12 @@ function paymentFor(
 ){
 
   return data.payments.find(
+
     p =>
       p.playerId === playerId &&
       p.school === currentSchool() &&
       p.monthKey === key
+
   );
 
 }
@@ -679,79 +919,83 @@ function paymentsForMonth(
 ){
 
   return data.payments.filter(
+
     p =>
       p.school === currentSchool() &&
       p.monthKey === key
+
   );
 
 }
 
 
-/* =========================================================
-   INICIO
-   ========================================================= */
-
-function init(){
-
-  school.innerHTML =
-    data.schools.map(
-      (s,i) =>
-        `<option value="${i}">
-          ${esc(s)}
-        </option>`
-    ).join('');
-
-  school.onchange = render;
-
-  render();
-
-}
-
-
-/* =========================================================
+/* =====================================================
    RENDER
-   ========================================================= */
+===================================================== */
 
 function render(){
 
-  if(currentView === 'home') home();
+  if(currentView === 'home'){
+    home();
+  }
 
-  if(currentView === 'players') players();
+  if(currentView === 'players'){
+    players();
+  }
 
-  if(currentView === 'payments') payments();
+  if(currentView === 'payments'){
+    payments();
+  }
 
-  if(currentView === 'reports') reports();
+  if(currentView === 'reports'){
+    reports();
+  }
 
-  if(currentView === 'settings') settings();
+  if(currentView === 'settings'){
+    settings();
+  }
 
 }
 
 
-/* =========================================================
+/* =====================================================
    INICIO
-   ========================================================= */
+===================================================== */
 
 function home(){
 
-  const list = ps();
+  const list =
+    ps();
 
-  const key = monthKey();
+  const key =
+    monthKey();
 
   const paid =
     list.filter(
-      p => paymentFor(p.id,key)
+      p =>
+        paymentFor(
+          p.id,
+          key
+        )
     ).length;
 
   const collected =
     paymentsForMonth(key)
       .reduce(
-        (a,p) => a + Number(p.amount || 0),
+        (a,p) =>
+          a +
+          Number(
+            p.amount || 0
+          ),
         0
       );
 
   const expected =
     list.length *
-    fee(currentSchool(),key);
+    fee(
+      currentSchool(),
+      key
+    );
 
   const pending =
     Math.max(
@@ -759,67 +1003,88 @@ function home(){
       expected - collected
     );
 
-
-  document.getElementById('app').innerHTML = `
+  document.getElementById(
+    'app'
+  ).innerHTML = `
 
     <div class="grid">
 
       <div class="card">
+
         <div class="label">
           Jugadores activos
         </div>
+
         <div class="metric">
           ${list.length}
         </div>
+
       </div>
 
       <div class="card">
+
         <div class="label">
           Pagaron ${esc(monthName(key))}
         </div>
+
         <div class="metric">
           ${paid}
         </div>
+
       </div>
 
       <div class="card">
+
         <div class="label">
           Recaudado
         </div>
+
         <div class="metric">
           ${money(collected)}
         </div>
+
       </div>
 
       <div class="card">
+
         <div class="label">
           Pendiente estimado
         </div>
+
         <div class="metric">
           ${money(pending)}
         </div>
+
       </div>
 
     </div>
 
+
     <div class="actions">
 
-      <button class="btn green"
+      <button
+        type="button"
+        class="btn green"
         onclick="openPlayer()">
         ＋ Agregar jugador
       </button>
 
-      <button class="btn blue"
+      <button
+        type="button"
+        class="btn blue"
         onclick="openPayment()">
         ✓ Registrar pago
       </button>
 
-      <button class="btn amber"
+      <button
+        type="button"
+        class="btn amber"
         onclick="setViewByName('reports')">
         📊 Ver reporte
       </button>
 
     </div>
+
 
     <div class="card section">
 
@@ -831,15 +1096,16 @@ function home(){
 
     </div>
 
+
     <div class="notice">
 
       💡 Cuota del mes:
       <b>${money(fee(currentSchool(),key))}</b>.
 
-      Podés cambiarla desde ⚙️ Opciones.
+      Podés cambiarla desde
+      ⚙️ Opciones.
 
-      La app guarda los datos en este dispositivo
-      y conserva el historial mensual.
+      Los datos se conservan en este dispositivo.
 
     </div>
 
@@ -848,15 +1114,18 @@ function home(){
 }
 
 
-/* =========================================================
-   PENDIENTES
-   ========================================================= */
-
-function pendingRows(list,key){
+function pendingRows(
+  list,
+  key
+){
 
   const pend =
     list.filter(
-      p => !paymentFor(p.id,key)
+      p =>
+        !paymentFor(
+          p.id,
+          key
+        )
     );
 
   if(!pend.length){
@@ -870,6 +1139,7 @@ function pendingRows(list,key){
   }
 
   return pend.map(
+
     p => `
 
       <div class="row">
@@ -881,12 +1151,16 @@ function pendingRows(list,key){
           </b>
 
           <span class="small">
-            ${esc(p.category || 'Sin categoría')}
+            ${esc(
+              p.category ||
+              'Sin categoría'
+            )}
           </span>
 
         </div>
 
         <button
+          type="button"
           class="btn green"
           style="padding:8px 10px"
           onclick="quickPay('${p.id}')">
@@ -898,28 +1172,29 @@ function pendingRows(list,key){
       </div>
 
     `
+
   ).join('');
 
 }
 
 
-/* =========================================================
+/* =====================================================
    JUGADORES
-   ========================================================= */
-
-let showInactive = false;
-
+===================================================== */
 
 function players(){
 
   const list =
     allSchoolPlayers();
 
-  document.getElementById('app').innerHTML = `
+  document.getElementById(
+    'app'
+  ).innerHTML = `
 
     <div class="actions">
 
       <button
+        type="button"
         class="btn green"
         onclick="openPlayer()">
 
@@ -928,20 +1203,23 @@ function players(){
       </button>
 
       <button
+        type="button"
         class="btn ghost"
         onclick="toggleInactive()">
 
-        👤 Ver activos/inactivos
+        👤 Activos / inactivos
 
       </button>
 
     </div>
+
 
     <input
       class="search"
       id="search"
       placeholder="🔎 Buscar jugador..."
       oninput="filterPlayers()">
+
 
     <div
       class="card"
@@ -982,7 +1260,8 @@ function playerRows(list){
     showInactive
       ? list
       : list.filter(
-          p => p.active !== false
+          p =>
+            p.active !== false
         );
 
   if(!view.length){
@@ -996,6 +1275,7 @@ function playerRows(list){
   }
 
   return view.map(
+
     p => `
 
       <div class="row">
@@ -1008,23 +1288,34 @@ function playerRows(list){
 
             ${
               p.active === false
-              ? '<span class="badge warn">INACTIVO</span>'
-              : ''
+                ? `<span class="badge warn">
+                     INACTIVO
+                   </span>`
+                : ''
             }
 
           </b>
 
           <span class="small">
 
-            ${esc(p.category || 'Sin categoría')}
+            ${esc(
+              p.category ||
+              'Sin categoría'
+            )}
+
             ·
-            ${esc(p.phone || 'Sin teléfono')}
+
+            ${esc(
+              p.phone ||
+              'Sin teléfono'
+            )}
 
           </span>
 
         </div>
 
         <button
+          type="button"
           class="btn"
           style="padding:8px 10px"
           onclick="openPlayer('${p.id}')">
@@ -1036,6 +1327,7 @@ function playerRows(list){
       </div>
 
     `
+
   ).join('');
 
 }
@@ -1044,53 +1336,58 @@ function playerRows(list){
 function filterPlayers(){
 
   const input =
-    document.getElementById('search');
+    document.getElementById(
+      'search'
+    );
 
-  if(!input) return;
+  if(!input)return;
 
   const q =
-    (input.value || '')
-      .toLowerCase();
+    (
+      input.value || ''
+    ).toLowerCase();
 
-  const list =
-    allSchoolPlayers().filter(
-      p =>
-        (
-          (p.name || '') +
-          ' ' +
-          (p.category || '') +
-          ' ' +
-          (p.phone || '')
-        )
-        .toLowerCase()
-        .includes(q)
-    );
+  const filtered =
+    allSchoolPlayers()
+      .filter(
+
+        p =>
+
+          (
+            p.name +
+            ' ' +
+            p.category +
+            ' ' +
+            p.phone
+          )
+          .toLowerCase()
+          .includes(q)
+
+      );
 
   document.getElementById(
     'playerList'
   ).innerHTML =
-    playerRows(list);
+    playerRows(filtered);
 
 }
 
 
-/* =========================================================
-   CUOTAS
-   ========================================================= */
+/* =====================================================
+   PAGOS
+===================================================== */
 
 function payments(){
 
-  let key = monthKey();
+  const key =
+    monthKey();
 
-  let list = ps();
+  const list =
+    ps();
 
-  let paid =
-    list.filter(
-      p => paymentFor(p.id,key)
-    ).length;
-
-
-  document.getElementById('app').innerHTML = `
+  document.getElementById(
+    'app'
+  ).innerHTML = `
 
     <div class="card">
 
@@ -1117,7 +1414,12 @@ function payments(){
           </label>
 
           <input
-            value="${money(fee(currentSchool(),key))}"
+            value="${money(
+              fee(
+                currentSchool(),
+                key
+              )
+            )}"
             disabled>
 
         </div>
@@ -1138,96 +1440,105 @@ function payments(){
 function renderPaymentsMonth(){
 
   const input =
-    document.getElementById('payMonth');
+    document.getElementById(
+      'payMonth'
+    );
 
-  if(!input) return;
+  if(!input)return;
 
-  let key =
-    input.value || monthKey();
+  const key =
+    input.value ||
+    monthKey();
 
-  let list = ps();
+  const list =
+    ps();
 
-  let rows =
-    list.map(p => {
+  const rows =
+    list.map(
 
-      let x =
-        paymentFor(p.id,key);
+      p => {
 
-      return `
+        const x =
+          paymentFor(
+            p.id,
+            key
+          );
 
-        <div class="row">
+        return `
 
-          <div class="info">
+          <div class="row">
 
-            <b>
-              ${esc(p.name)}
-            </b>
+            <div class="info">
 
-            <span class="small">
+              <b>
+                ${esc(p.name)}
+              </b>
 
-              ${
-                x
-                ? money(x.amount) +
-                  ' · ' +
-                  esc(x.method) +
-                  ' · ' +
-                  formatDate(x.date)
+              <span class="small">
 
-                : 'Sin pago registrado'
-              }
+                ${
+                  x
+                    ? money(x.amount) +
+                      ' · ' +
+                      esc(x.method) +
+                      ' · ' +
+                      formatDate(x.date)
 
-            </span>
+                    : 'Sin pago registrado'
+                }
 
-          </div>
-
-          ${
-            x
-
-            ?
-
-            `
-
-            <div>
-
-              <span class="badge paid">
-                PAGADA
               </span>
-
-              <button
-                class="btn ghost"
-                style="padding:7px 9px;margin-left:5px"
-                onclick="receipt('${x.id}')">
-
-                🧾
-
-              </button>
 
             </div>
 
-            `
 
-            :
+            ${
+              x
 
-            `
+                ? `
 
-            <button
-              class="btn green"
-              style="padding:8px 10px"
-              onclick="quickPay('${p.id}','${key}')">
+                  <div>
 
-              Pagó
+                    <span class="badge paid">
+                      PAGADA
+                    </span>
 
-            </button>
+                    <button
+                      type="button"
+                      class="btn ghost"
+                      style="padding:7px 9px;margin-left:5px"
+                      onclick="receipt('${x.id}')">
 
-            `
+                      🧾
 
-          }
+                    </button>
 
-        </div>
+                  </div>
 
-      `;
+                `
 
-    }).join('');
+                : `
+
+                  <button
+                    type="button"
+                    class="btn green"
+                    style="padding:8px 10px"
+                    onclick="quickPay('${p.id}','${key}')">
+
+                    Pagó
+
+                  </button>
+
+                `
+            }
+
+          </div>
+
+        `;
+
+      }
+
+    ).join('');
 
 
   document.getElementById(
@@ -1237,6 +1548,7 @@ function renderPaymentsMonth(){
     <div class="actions">
 
       <button
+        type="button"
         class="btn blue"
         onclick="openPayment(null,'${key}')">
 
@@ -1245,6 +1557,7 @@ function renderPaymentsMonth(){
       </button>
 
       <button
+        type="button"
         class="btn ghost"
         onclick="exportCSV('${key}')">
 
@@ -1253,6 +1566,7 @@ function renderPaymentsMonth(){
       </button>
 
     </div>
+
 
     <div class="card">
 
@@ -1275,43 +1589,54 @@ function renderPaymentsMonth(){
 }
 
 
-/* =========================================================
+/* =====================================================
    REPORTES
-   ========================================================= */
+===================================================== */
 
 function reports(){
 
-  let key =
-    reportMonth || monthKey();
+  const key =
+    reportMonth ||
+    monthKey();
 
-  let list = ps();
+  const list =
+    ps();
 
-  let pay =
+  const pay =
     paymentsForMonth(key);
 
-  let paidIds =
+  const paidIds =
     new Set(
-      pay.map(p => p.playerId)
+      pay.map(
+        p =>
+          p.playerId
+      )
     );
 
-  let col =
+  const col =
     pay.reduce(
       (a,p) =>
-        a + Number(p.amount || 0),
+        a +
+        Number(
+          p.amount || 0
+        ),
       0
     );
 
-  let expected =
+  const expected =
     list.length *
-    fee(currentSchool(),key);
+    fee(
+      currentSchool(),
+      key
+    );
 
-  let pending =
+  const pending =
     Math.max(
       0,
       expected - col
     );
 
-  let rate =
+  const rate =
     list.length
       ? Math.round(
           paidIds.size /
@@ -1320,17 +1645,29 @@ function reports(){
         )
       : 0;
 
-  let methods = {};
+  const methods = {};
 
   pay.forEach(
-    p =>
+
+    p => {
+
       methods[p.method] =
-        (methods[p.method] || 0) +
-        Number(p.amount || 0)
+        (
+          methods[p.method] ||
+          0
+        ) +
+        Number(
+          p.amount || 0
+        );
+
+    }
+
   );
 
 
-  document.getElementById('app').innerHTML = `
+  document.getElementById(
+    'app'
+  ).innerHTML = `
 
     <div class="card">
 
@@ -1346,115 +1683,155 @@ function reports(){
           value="${key}"
           onchange="
             reportMonth=this.value;
-            render()
+            render();
           ">
 
       </div>
 
     </div>
 
+
     <div class="reportbar section">
 
       <div class="mini">
+
         <span class="small">
           Jugadores
         </span>
-        <b>${list.length}</b>
+
+        <b>
+          ${list.length}
+        </b>
+
       </div>
 
+
       <div class="mini">
+
         <span class="small">
           Pagaron
         </span>
+
         <b>
           ${paidIds.size}
           (${rate}%)
         </b>
+
       </div>
 
+
       <div class="mini">
+
         <span class="small">
           Recaudado
         </span>
+
         <b>
           ${money(col)}
         </b>
+
       </div>
 
+
       <div class="mini">
+
         <span class="small">
           Pendiente
         </span>
+
         <b>
           ${money(pending)}
         </b>
+
       </div>
 
     </div>
 
+
     <div class="card">
 
       <h2 style="margin-top:0">
-        📊 Resumen de ${esc(monthName(key))}
+
+        📊 Resumen de
+        ${esc(monthName(key))}
+
       </h2>
 
       <p class="small">
 
         Cuota tomada para el cálculo:
-        ${money(fee(currentSchool(),key))}
+        ${money(
+          fee(
+            currentSchool(),
+            key
+          )
+        )}
 
       </p>
+
 
       <table class="table">
 
         <tr>
-          <th>Medio de pago</th>
-          <th class="right">Importe</th>
+
+          <th>
+            Medio de pago
+          </th>
+
+          <th class="right">
+            Importe
+          </th>
+
         </tr>
+
 
         ${
           Object.keys(methods).length
 
-          ?
+            ? Object.entries(methods)
+                .map(
 
-          Object.entries(methods)
-            .map(
-              ([m,v]) =>
-                `
+                  ([m,v]) => `
 
-                <tr>
+                    <tr>
 
-                  <td>
-                    ${esc(m)}
-                  </td>
+                      <td>
+                        ${esc(m)}
+                      </td>
 
-                  <td class="right">
-                    ${money(v)}
-                  </td>
+                      <td class="right">
+                        ${money(v)}
+                      </td>
 
-                </tr>
+                    </tr>
 
-                `
-            ).join('')
+                  `
+                )
+                .join('')
 
-          :
+            : `
 
-          `
-          <tr>
-            <td colspan="2">
-              Sin pagos registrados.
-            </td>
-          </tr>
-          `
+              <tr>
+
+                <td colspan="2">
+                  Sin pagos registrados.
+                </td>
+
+              </tr>
+
+            `
         }
 
       </table>
 
+
       <div class="divider"></div>
+
 
       <div class="actions">
 
         <button
+          type="button"
           class="btn blue"
           onclick="exportCSV('${key}')">
 
@@ -1462,7 +1839,9 @@ function reports(){
 
         </button>
 
+
         <button
+          type="button"
           class="btn green"
           onclick="printReport('${key}')">
 
@@ -1470,7 +1849,9 @@ function reports(){
 
         </button>
 
+
         <button
+          type="button"
           class="btn ghost"
           onclick="backup()">
 
@@ -1482,6 +1863,7 @@ function reports(){
 
     </div>
 
+
     <div class="card section">
 
       <h2 style="margin-top:0">
@@ -1491,64 +1873,81 @@ function reports(){
       ${
         pay.length
 
-        ?
+          ? pay.map(
 
-        pay.map(x => {
+              x => {
 
-          let p =
-            data.players.find(
-              q => q.id === x.playerId
-            );
+                const p =
+                  data.players.find(
+                    q =>
+                      q.id ===
+                      x.playerId
+                  );
 
-          return `
+                return `
 
-            <div class="row">
+                  <div class="row">
 
-              <div class="info">
+                    <div class="info">
 
-                <b>
-                  ${esc(
-                    p
-                    ? p.name
-                    : 'Jugador eliminado'
-                  )}
-                </b>
+                      <b>
+                        ${esc(
+                          p
+                            ? p.name
+                            : 'Jugador eliminado'
+                        )}
+                      </b>
 
-                <span class="small">
+                      <span class="small">
 
-                  ${esc(x.method)}
-                  ·
-                  ${formatDate(x.date)}
-                  ·
-                  ${money(x.amount)}
+                        ${esc(
+                          x.method
+                        )}
 
-                </span>
+                        ·
 
-              </div>
+                        ${formatDate(
+                          x.date
+                        )}
 
-              <button
-                class="btn ghost"
-                style="padding:7px 9px"
-                onclick="receipt('${x.id}')">
+                        ·
 
-                🧾 Comprobante
+                        ${money(
+                          x.amount
+                        )}
 
-              </button>
+                      </span>
+
+                    </div>
+
+
+                    <button
+                      type="button"
+                      class="btn ghost"
+                      style="padding:7px 9px"
+                      onclick="receipt('${x.id}')">
+
+                      🧾 Comprobante
+
+                    </button>
+
+                  </div>
+
+                `;
+
+              }
+
+            ).join('')
+
+          : `
+
+            <div class="empty">
+
+              No hay pagos para este mes.
 
             </div>
 
-          `;
-
-        }).join('')
-
-        :
-
-        `
-        <div class="empty">
-          No hay pagos para este mes.
-        </div>
-        `
-
+          `
       }
 
     </div>
@@ -1558,28 +1957,31 @@ function reports(){
 }
 
 
-/* =========================================================
+/* =====================================================
    CONFIGURACIÓN
-   ========================================================= */
+===================================================== */
 
 function settings(){
 
-  let s =
+  const s =
     currentSchool();
 
-  let key =
+  const key =
     monthKey();
 
-  let history =
+  const history =
     Object.entries(
       data.feeHistory[s] || {}
-    ).sort(
+    )
+    .sort(
       (a,b) =>
         b[0].localeCompare(a[0])
     );
 
 
-  document.getElementById('app').innerHTML = `
+  document.getElementById(
+    'app'
+  ).innerHTML = `
 
     <div class="card">
 
@@ -1587,10 +1989,12 @@ function settings(){
         ⚙️ Configuración
       </h2>
 
+
       <div class="field">
 
         <label>
-          Cuota para ${esc(monthName(key))}
+          Cuota para
+          ${esc(monthName(key))}
         </label>
 
         <input
@@ -1601,7 +2005,9 @@ function settings(){
 
       </div>
 
+
       <button
+        type="button"
         class="btn green"
         style="width:100%"
         onclick="saveFee()">
@@ -1610,11 +2016,11 @@ function settings(){
 
       </button>
 
+
       <p class="small">
 
-        Al guardar, el valor queda asociado
-        al mes actual. Los meses anteriores
-        conservan su importe histórico.
+        Al guardar, el valor queda
+        asociado al mes actual.
 
       </p>
 
@@ -1627,44 +2033,47 @@ function settings(){
         🗓️ Historial de cuotas
       </h2>
 
+
       ${
         history.length
 
-        ?
+          ? history.map(
 
-        history.map(
-          ([k,v]) => `
+              ([k,v]) => `
 
-            <div class="row">
+                <div class="row">
 
-              <div class="info">
+                  <div class="info">
 
-                <b>
-                  ${esc(monthName(k))}
-                </b>
+                    <b>
+                      ${esc(
+                        monthName(k)
+                      )}
+                    </b>
 
-                <span class="small">
-                  Cuota registrada
-                </span>
+                    <span class="small">
+                      Cuota registrada
+                    </span>
 
-              </div>
+                  </div>
 
-              <span class="badge bluebadge">
-                ${money(v)}
-              </span>
+                  <span class="badge bluebadge">
+                    ${money(v)}
+                  </span>
 
+                </div>
+
+              `
+            ).join('')
+
+          : `
+
+            <div class="empty">
+              Todavía no hay historial
+              de cuotas.
             </div>
 
           `
-        ).join('')
-
-        :
-
-        `
-        <div class="empty">
-          Todavía no hay historial de cuotas.
-        </div>
-        `
       }
 
     </div>
@@ -1676,17 +2085,25 @@ function settings(){
         Escuelas / sedes
       </h2>
 
+
       ${
         data.schools.map(
+
           (x,i) => `
 
             <div class="row">
 
               <div class="info">
-                <b>${esc(x)}</b>
+
+                <b>
+                  ${esc(x)}
+                </b>
+
               </div>
 
+
               <button
+                type="button"
                 class="btn"
                 style="padding:8px 10px"
                 onclick="renameSchool(${i})">
@@ -1701,9 +2118,11 @@ function settings(){
         ).join('')
       }
 
+
       <div class="actions">
 
         <button
+          type="button"
           class="btn green"
           onclick="addSchool()">
 
@@ -1711,7 +2130,9 @@ function settings(){
 
         </button>
 
+
         <button
+          type="button"
           class="btn"
           onclick="backup()">
 
@@ -1732,23 +2153,27 @@ function settings(){
 
       <p class="small">
 
-        Podés exportar todos los pagos registrados
-        a CSV o hacer una copia completa en JSON
-        para restaurarla en otro dispositivo.
+        Podés exportar todos los pagos
+        registrados a CSV o hacer una
+        copia completa en JSON.
 
       </p>
+
 
       <div class="actions">
 
         <button
+          type="button"
           class="btn blue"
           onclick="exportCSV()">
 
-          📥 Exportar todos los pagos
+          📥 Exportar pagos
 
         </button>
 
+
         <button
+          type="button"
           class="btn ghost"
           onclick="backup()">
 
@@ -1764,14 +2189,25 @@ function settings(){
     <div class="card section">
 
       <h2 style="margin-top:0">
-        📱 Usarla como app
+        📱 Estado
       </h2>
 
       <p class="small">
 
-        Abrí este archivo en Safari o publicalo
-        en GitHub Pages. Los datos se guardan
-        en el navegador mediante localStorage.
+        Supabase:
+        ${
+          supabaseClient
+            ? '🟢 conectado'
+            : '🟡 no disponible'
+        }
+
+      </p>
+
+      <p class="small">
+
+        Los datos actuales también
+        permanecen guardados localmente
+        en este navegador.
 
       </p>
 
@@ -1785,6 +2221,7 @@ function settings(){
       </h2>
 
       <button
+        type="button"
         class="btn danger"
         style="width:100%"
         onclick="resetAll()">
@@ -1800,9 +2237,9 @@ function settings(){
 }
 
 
-/* =========================================================
-   FORMULARIO JUGADOR
-   ========================================================= */
+/* =====================================================
+   MODAL JUGADOR
+===================================================== */
 
 function openPlayer(idValue){
 
@@ -1812,10 +2249,12 @@ function openPlayer(idValue){
   formType =
     'player';
 
-  let p =
+  const p =
     idValue
       ? data.players.find(
-          x => x.id === idValue
+          x =>
+            x.id ===
+            idValue
         )
       : {};
 
@@ -1840,7 +2279,9 @@ function openPlayer(idValue){
 
       <input
         id="f_name"
-        value="${attr(p.name || '')}">
+        value="${attr(
+          p.name || ''
+        )}">
 
     </div>
 
@@ -1854,7 +2295,9 @@ function openPlayer(idValue){
       <input
         id="f_cat"
         placeholder="Ej. Sub 14"
-        value="${attr(p.category || '')}">
+        value="${attr(
+          p.category || ''
+        )}">
 
     </div>
 
@@ -1868,7 +2311,9 @@ function openPlayer(idValue){
       <input
         id="f_birth"
         type="date"
-        value="${attr(p.birth || '')}">
+        value="${attr(
+          p.birth || ''
+        )}">
 
     </div>
 
@@ -1881,7 +2326,9 @@ function openPlayer(idValue){
 
       <input
         id="f_tutor"
-        value="${attr(p.tutor || '')}">
+        value="${attr(
+          p.tutor || ''
+        )}">
 
     </div>
 
@@ -1895,7 +2342,9 @@ function openPlayer(idValue){
       <input
         id="f_phone"
         inputmode="tel"
-        value="${attr(p.phone || '')}">
+        value="${attr(
+          p.phone || ''
+        )}">
 
     </div>
 
@@ -1910,7 +2359,11 @@ function openPlayer(idValue){
 
         <option
           value="true"
-          ${p.active !== false ? 'selected' : ''}>
+          ${
+            p.active !== false
+              ? 'selected'
+              : ''
+          }>
 
           Activo
 
@@ -1918,7 +2371,11 @@ function openPlayer(idValue){
 
         <option
           value="false"
-          ${p.active === false ? 'selected' : ''}>
+          ${
+            p.active === false
+              ? 'selected'
+              : ''
+          }>
 
           Inactivo
 
@@ -1935,9 +2392,9 @@ function openPlayer(idValue){
 }
 
 
-/* =========================================================
-   FORMULARIO PAGO
-   ========================================================= */
+/* =====================================================
+   MODAL PAGO
+===================================================== */
 
 function openPayment(
   playerId,
@@ -1950,7 +2407,7 @@ function openPayment(
   editId =
     null;
 
-  let list =
+  const list =
     ps();
 
 
@@ -1974,11 +2431,16 @@ function openPayment(
 
         ${
           list.map(
+
             p => `
 
               <option
                 value="${p.id}"
-                ${p.id === playerId ? 'selected' : ''}>
+                ${
+                  p.id === playerId
+                    ? 'selected'
+                    : ''
+                }>
 
                 ${esc(p.name)}
 
@@ -2017,7 +2479,10 @@ function openPayment(
         id="f_amount"
         type="number"
         inputmode="decimal"
-        value="${fee(currentSchool(),key)}">
+        value="${fee(
+          currentSchool(),
+          key
+        )}">
 
     </div>
 
@@ -2030,10 +2495,21 @@ function openPayment(
 
       <select id="f_method">
 
-        <option>Efectivo</option>
-        <option>Transferencia</option>
-        <option>Mercado Pago</option>
-        <option>Otro</option>
+        <option>
+          Efectivo
+        </option>
+
+        <option>
+          Transferencia
+        </option>
+
+        <option>
+          Mercado Pago
+        </option>
+
+        <option>
+          Otro
+        </option>
 
       </select>
 
@@ -2059,16 +2535,21 @@ function openPayment(
 }
 
 
-/* =========================================================
+/* =====================================================
    PAGO RÁPIDO
-   ========================================================= */
+===================================================== */
 
 function quickPay(
   playerId,
   key = monthKey()
 ){
 
-  if(paymentFor(playerId,key)){
+  if(
+    paymentFor(
+      playerId,
+      key
+    )
+  ){
 
     alert(
       'Este jugador ya figura como pagado en ese mes.'
@@ -2079,8 +2560,11 @@ function quickPay(
   }
 
 
-  let amount =
-    fee(currentSchool(),key);
+  const amount =
+    fee(
+      currentSchool(),
+      key
+    );
 
 
   data.payments.push({
@@ -2113,19 +2597,21 @@ function quickPay(
 }
 
 
-/* =========================================================
-   GUARDAR FORMULARIOS
-   ========================================================= */
+/* =====================================================
+   GUARDAR FORMULARIO
+===================================================== */
 
 function saveForm(){
 
-  if(formType === 'player'){
+  if(
+    formType ===
+    'player'
+  ){
 
-    let name =
-      document
-        .getElementById('f_name')
-        .value
-        .trim();
+    const name =
+      document.getElementById(
+        'f_name'
+      ).value.trim();
 
 
     if(!name){
@@ -2139,52 +2625,52 @@ function saveForm(){
     }
 
 
-    let obj = {
+    const obj = {
 
       id:
-        editId || id(),
+        editId ||
+        id(),
 
       name:name,
 
       category:
-        document
-          .getElementById('f_cat')
-          .value
-          .trim(),
+        document.getElementById(
+          'f_cat'
+        ).value.trim(),
 
       birth:
-        document
-          .getElementById('f_birth')
-          .value,
+        document.getElementById(
+          'f_birth'
+        ).value,
 
       tutor:
-        document
-          .getElementById('f_tutor')
-          .value
-          .trim(),
+        document.getElementById(
+          'f_tutor'
+        ).value.trim(),
 
       phone:
-        document
-          .getElementById('f_phone')
-          .value
-          .trim(),
+        document.getElementById(
+          'f_phone'
+        ).value.trim(),
 
       school:
         currentSchool(),
 
       active:
-        document
-          .getElementById('f_active')
-          .value === 'true'
+        document.getElementById(
+          'f_active'
+        ).value === 'true'
 
     };
 
 
     if(editId){
 
-      let i =
+      const i =
         data.players.findIndex(
-          x => x.id === editId
+          x =>
+            x.id ===
+            editId
         );
 
       if(i >= 0){
@@ -2196,32 +2682,41 @@ function saveForm(){
 
     }else{
 
-      data.players.push(obj);
+      data.players.push(
+        obj
+      );
 
     }
 
 
   }else{
 
-    let pid =
-      document
-        .getElementById('f_player')
-        .value;
 
-    let key =
-      document
-        .getElementById('f_month')
-        .value;
+    const pid =
+      document.getElementById(
+        'f_player'
+      ).value;
 
-    let amount =
+
+    const key =
+      document.getElementById(
+        'f_month'
+      ).value;
+
+
+    const amount =
       Number(
-        document
-          .getElementById('f_amount')
-          .value
+        document.getElementById(
+          'f_amount'
+        ).value
       ) || 0;
 
 
-    if(!pid || !key || !amount){
+    if(
+      !pid ||
+      !key ||
+      !amount
+    ){
 
       alert(
         'Completá jugador, mes e importe.'
@@ -2232,7 +2727,12 @@ function saveForm(){
     }
 
 
-    if(paymentFor(pid,key)){
+    if(
+      paymentFor(
+        pid,
+        key
+      )
+    ){
 
       alert(
         'Ese jugador ya tiene un pago registrado para ese mes.'
@@ -2249,24 +2749,25 @@ function saveForm(){
 
       playerId:pid,
 
-      school:currentSchool(),
+      school:
+        currentSchool(),
 
-      month:monthName(key),
+      month:
+        monthName(key),
 
       monthKey:key,
 
       amount:amount,
 
       method:
-        document
-          .getElementById('f_method')
-          .value,
+        document.getElementById(
+          'f_method'
+        ).value,
 
       note:
-        document
-          .getElementById('f_note')
-          .value
-          .trim(),
+        document.getElementById(
+          'f_note'
+        ).value.trim(),
 
       date:
         new Date().toISOString()
@@ -2285,21 +2786,23 @@ function saveForm(){
 }
 
 
-/* =========================================================
-   CUOTA
-   ========================================================= */
+/* =====================================================
+   GUARDAR CUOTA
+===================================================== */
 
 function saveFee(){
 
-  let input =
-    document.getElementById('fee');
+  const input =
+    document.getElementById(
+      'fee'
+    );
 
-  if(!input) return;
+  const v =
+    Number(
+      input.value
+    );
 
-  let v =
-    Number(input.value);
-
-  let key =
+  const key =
     monthKey();
 
 
@@ -2327,19 +2830,22 @@ function saveFee(){
 }
 
 
-/* =========================================================
+/* =====================================================
    ESCUELAS
-   ========================================================= */
+===================================================== */
 
 function addSchool(){
 
-  let n =
+  const n =
     prompt(
       'Nombre de la nueva escuela / sede:'
     );
 
 
-  if(n && n.trim()){
+  if(
+    n &&
+    n.trim()
+  ){
 
     data.schools.push(
       n.trim()
@@ -2361,19 +2867,22 @@ function addSchool(){
 
 function renameSchool(i){
 
-  let old =
+  const old =
     data.schools[i];
 
-  let n =
+  const n =
     prompt(
       'Nuevo nombre:',
       old
     );
 
 
-  if(n && n.trim()){
+  if(
+    n &&
+    n.trim()
+  ){
 
-    let newName =
+    const newName =
       n.trim();
 
 
@@ -2382,9 +2891,13 @@ function renameSchool(i){
 
 
     data.players.forEach(
+
       p => {
 
-        if(p.school === old){
+        if(
+          p.school ===
+          old
+        ){
 
           p.school =
             newName;
@@ -2392,13 +2905,18 @@ function renameSchool(i){
         }
 
       }
+
     );
 
 
     data.payments.forEach(
+
       p => {
 
-        if(p.school === old){
+        if(
+          p.school ===
+          old
+        ){
 
           p.school =
             newName;
@@ -2406,10 +2924,13 @@ function renameSchool(i){
         }
 
       }
+
     );
 
 
-    if(data.fees[old] != null){
+    if(
+      data.fees[old] != null
+    ){
 
       data.fees[newName] =
         data.fees[old];
@@ -2419,7 +2940,9 @@ function renameSchool(i){
     }
 
 
-    if(data.feeHistory[old]){
+    if(
+      data.feeHistory[old]
+    ){
 
       data.feeHistory[newName] =
         data.feeHistory[old];
@@ -2438,13 +2961,13 @@ function renameSchool(i){
 }
 
 
-/* =========================================================
+/* =====================================================
    BACKUP
-   ========================================================= */
+===================================================== */
 
 function backup(){
 
-  let b =
+  const b =
     new Blob(
       [
         JSON.stringify(
@@ -2454,13 +2977,16 @@ function backup(){
         )
       ],
       {
-        type:'application/json'
+        type:
+          'application/json'
       }
     );
 
 
-  let a =
-    document.createElement('a');
+  const a =
+    document.createElement(
+      'a'
+    );
 
 
   a.href =
@@ -2475,29 +3001,42 @@ function backup(){
 
 
   setTimeout(
+
     () =>
-      URL.revokeObjectURL(a.href),
+      URL.revokeObjectURL(
+        a.href
+      ),
+
     500
+
   );
 
 }
 
 
-/* =========================================================
-   EXPORTAR CSV
-   ========================================================= */
+/* =====================================================
+   CSV
+===================================================== */
 
 function exportCSV(key){
 
-  let rows =
+  const rows =
     data.payments.filter(
+
       p =>
-        p.school === currentSchool() &&
-        (!key || p.monthKey === key)
+        p.school ===
+        currentSchool() &&
+
+        (
+          !key ||
+          p.monthKey === key
+        )
+
     );
 
 
-  let head = [
+  const head = [
+
     'Fecha',
     'Mes',
     'Escuela',
@@ -2506,25 +3045,31 @@ function exportCSV(key){
     'Importe',
     'Medio de pago',
     'Observación'
+
   ];
 
 
-  let out = [
+  const out = [
 
     head,
 
     ...rows.map(
+
       x => {
 
-        let p =
+        const p =
           data.players.find(
-            q => q.id === x.playerId
+            q =>
+              q.id ===
+              x.playerId
           ) || {};
 
 
         return [
 
-          formatDate(x.date),
+          formatDate(
+            x.date
+          ),
 
           x.month,
 
@@ -2543,42 +3088,59 @@ function exportCSV(key){
         ];
 
       }
+
     )
 
   ];
 
 
-  let csv =
+  const csv =
     '\ufeff' +
+
     out
       .map(
+
         r =>
+
           r.map(
+
             v =>
               '"' +
-              String(v ?? '')
-                .replace(/"/g,'""') +
+              String(
+                v ?? ''
+              )
+              .replace(
+                /"/g,
+                '""'
+              ) +
               '"'
+
           ).join(';')
+
       )
       .join('\n');
 
 
-  let blob =
+  const blob =
     new Blob(
       [csv],
       {
-        type:'text/csv;charset=utf-8'
+        type:
+          'text/csv;charset=utf-8'
       }
     );
 
 
-  let a =
-    document.createElement('a');
+  const a =
+    document.createElement(
+      'a'
+    );
 
 
   a.href =
-    URL.createObjectURL(blob);
+    URL.createObjectURL(
+      blob
+    );
 
 
   a.download =
@@ -2591,35 +3153,47 @@ function exportCSV(key){
 
 
   setTimeout(
+
     () =>
-      URL.revokeObjectURL(a.href),
+      URL.revokeObjectURL(
+        a.href
+      ),
+
     500
+
   );
 
 }
 
 
-/* =========================================================
+/* =====================================================
    COMPROBANTE
-   ========================================================= */
+===================================================== */
 
-function receipt(paymentId){
+function receipt(
+  paymentId
+){
 
-  let pmt =
+  const pmt =
     data.payments.find(
-      x => x.id === paymentId
+      x =>
+        x.id ===
+        paymentId
     );
 
-  if(!pmt) return;
+
+  if(!pmt)return;
 
 
-  let p =
+  const p =
     data.players.find(
-      x => x.id === pmt.playerId
+      x =>
+        x.id ===
+        pmt.playerId
     ) || {};
 
 
-  let html = `
+  const html = `
 
 <!doctype html>
 
@@ -2718,43 +3292,103 @@ Comprobante de pago
 ${esc(pmt.school)}
 </h2>
 
-<div class="row">
-<span>Jugador</span>
-<b>${esc(p.name || '')}</b>
-</div>
 
 <div class="row">
-<span>Categoría</span>
-<span>${esc(p.category || '')}</span>
+
+<span>
+Jugador
+</span>
+
+<b>
+${esc(p.name || '')}
+</b>
+
 </div>
 
-<div class="row">
-<span>Período</span>
-<span>${esc(pmt.month || pmt.monthKey)}</span>
-</div>
 
 <div class="row">
-<span>Medio de pago</span>
-<span>${esc(pmt.method || '')}</span>
+
+<span>
+Categoría
+</span>
+
+<span>
+${esc(p.category || '')}
+</span>
+
 </div>
 
+
 <div class="row">
-<span>Fecha</span>
-<span>${formatDate(pmt.date)}</span>
+
+<span>
+Período
+</span>
+
+<span>
+${esc(
+  pmt.month ||
+  pmt.monthKey
+)}
+</span>
+
 </div>
+
+
+<div class="row">
+
+<span>
+Medio de pago
+</span>
+
+<span>
+${esc(
+  pmt.method || ''
+)}
+</span>
+
+</div>
+
+
+<div class="row">
+
+<span>
+Fecha
+</span>
+
+<span>
+${formatDate(
+  pmt.date
+)}
+</span>
+
+</div>
+
 
 ${
   pmt.note
-  ?
-  `
-  <div class="row">
-    <span>Observación</span>
-    <span>${esc(pmt.note)}</span>
-  </div>
-  `
-  :
-  ''
+
+    ? `
+
+      <div class="row">
+
+        <span>
+          Observación
+        </span>
+
+        <span>
+          ${esc(
+            pmt.note
+          )}
+        </span>
+
+      </div>
+
+    `
+
+    : ''
 }
+
 
 <div class="total">
 
@@ -2763,9 +3397,14 @@ ${money(pmt.amount)}
 
 </div>
 
-<button onclick="window.print()">
+
+<button
+  onclick="window.print()">
+
 Imprimir / Guardar PDF
+
 </button>
+
 
 </div>
 
@@ -2776,7 +3415,7 @@ Imprimir / Guardar PDF
 `;
 
 
-  let w =
+  const w =
     window.open(
       '',
       '_blank'
@@ -2794,51 +3433,69 @@ Imprimir / Guardar PDF
   }
 
 
-  w.document.write(html);
+  w.document.write(
+    html
+  );
 
   w.document.close();
 
 }
 
 
-/* =========================================================
+/* =====================================================
    IMPRIMIR REPORTE
-   ========================================================= */
+===================================================== */
 
 function printReport(key){
 
-  let pay =
-    paymentsForMonth(key);
+  const pay =
+    paymentsForMonth(
+      key
+    );
 
-  let col =
+
+  const col =
     pay.reduce(
       (a,p) =>
-        a + Number(p.amount || 0),
+        a +
+        Number(
+          p.amount || 0
+        ),
       0
     );
 
-  let list =
+
+  const list =
     ps();
 
-  let expected =
-    list.length *
-    fee(currentSchool(),key);
 
-  let paid =
+  const expected =
+    list.length *
+    fee(
+      currentSchool(),
+      key
+    );
+
+
+  const paid =
     new Set(
       pay.map(
-        p => p.playerId
+        p =>
+          p.playerId
       )
     ).size;
 
 
-  let rows =
+  const rows =
     pay.map(
+
       x => {
 
-        let p =
+        const p =
           data.players.find(
-            q => q.id === x.playerId
+            q =>
+              q.id ===
+              x.playerId
           ) || {};
 
 
@@ -2847,23 +3504,33 @@ function printReport(key){
           <tr>
 
             <td>
-              ${esc(p.name || '')}
+              ${esc(
+                p.name || ''
+              )}
             </td>
 
             <td>
-              ${esc(p.category || '')}
+              ${esc(
+                p.category || ''
+              )}
             </td>
 
             <td>
-              ${esc(x.method || '')}
+              ${esc(
+                x.method || ''
+              )}
             </td>
 
             <td>
-              ${formatDate(x.date)}
+              ${formatDate(
+                x.date
+              )}
             </td>
 
             <td>
-              ${money(x.amount)}
+              ${money(
+                x.amount
+              )}
             </td>
 
           </tr>
@@ -2871,10 +3538,11 @@ function printReport(key){
         `;
 
       }
+
     ).join('');
 
 
-  let w =
+  const w =
     window.open(
       '',
       '_blank'
@@ -2901,7 +3569,9 @@ function printReport(key){
 <meta charset="utf-8">
 
 <title>
-Reporte ${esc(monthName(key))}
+Reporte ${esc(
+  monthName(key)
+)}
 </title>
 
 <style>
@@ -2916,7 +3586,8 @@ table{
   border-collapse:collapse;
 }
 
-th,td{
+th,
+td{
   border-bottom:1px solid #ddd;
   padding:8px;
   text-align:left;
@@ -2945,53 +3616,113 @@ th,td{
 </h1>
 
 <h2>
-${esc(currentSchool())}
+
+${esc(
+  currentSchool()
+)}
+
 ·
-${esc(monthName(key))}
+
+${esc(
+  monthName(key)
+)}
+
 </h2>
+
 
 <div class="cards">
 
 <div class="card">
+
 Jugadores:
-<b>${list.length}</b>
+<b>
+${list.length}
+</b>
+
 </div>
 
+
 <div class="card">
+
 Pagaron:
-<b>${paid}</b>
+<b>
+${paid}
+</b>
+
 </div>
 
+
 <div class="card">
+
 Recaudado:
-<b>${money(col)}</b>
+<b>
+${money(col)}
+</b>
+
 </div>
+
 
 <div class="card">
+
 Pendiente:
-<b>${money(Math.max(0,expected-col))}</b>
+<b>
+${money(
+  Math.max(
+    0,
+    expected-col
+  )
+)}
+</b>
+
 </div>
 
 </div>
+
 
 <table>
 
 <tr>
 
-<th>Jugador</th>
-<th>Categoría</th>
-<th>Medio</th>
-<th>Fecha</th>
-<th>Importe</th>
+<th>
+Jugador
+</th>
+
+<th>
+Categoría
+</th>
+
+<th>
+Medio
+</th>
+
+<th>
+Fecha
+</th>
+
+<th>
+Importe
+</th>
 
 </tr>
 
+
 ${
   rows ||
-  '<tr><td colspan="5">Sin pagos.</td></tr>'
+
+  `
+    <tr>
+
+      <td colspan="5">
+        Sin pagos.
+      </td>
+
+    </tr>
+  `
 }
 
+
 </table>
+
 
 <script>
 
@@ -2999,55 +3730,71 @@ window.print();
 
 <\/script>
 
+
 </body>
 
 </html>
 
 `);
 
+
   w.document.close();
 
 }
 
 
-/* =========================================================
-   FECHAS
-   ========================================================= */
+/* =====================================================
+   FECHA
+===================================================== */
 
 function formatDate(v){
 
-  if(!v) return '';
+  if(!v)return '';
 
-  let d =
+  const d =
     new Date(v);
 
   return isNaN(d)
+
     ? String(v)
-    : d.toLocaleDateString('es-AR');
+
+    : d.toLocaleDateString(
+        'es-AR'
+      );
 
 }
 
 
-/* =========================================================
+/* =====================================================
    NAVEGACIÓN
-   ========================================================= */
+===================================================== */
 
-function setView(v,btn){
+function setView(
+  v,
+  btn
+){
 
   currentView =
     v;
 
+
   document
-    .querySelectorAll('nav button')
+    .querySelectorAll(
+      'nav button'
+    )
     .forEach(
       b =>
-        b.classList.remove('active')
+        b.classList.remove(
+          'active'
+        )
     );
 
 
   if(btn){
 
-    btn.classList.add('active');
+    btn.classList.add(
+      'active'
+    );
 
   }
 
@@ -3064,30 +3811,45 @@ function setViewByName(v){
 
 
   document
-    .querySelectorAll('nav button')
+    .querySelectorAll(
+      'nav button'
+    )
     .forEach(
       b =>
-        b.classList.remove('active')
+        b.classList.remove(
+          'active'
+        )
     );
 
 
-  let btn =
-    [...document.querySelectorAll('nav button')]
-      .find(
-        b =>
-          b.textContent
-            .toLowerCase()
-            .includes(
-              v === 'reports'
-                ? 'reportes'
-                : v
-            )
-      );
+  const target =
+    v === 'reports'
+      ? 'reportes'
+      : v;
+
+
+  const btn =
+    [
+      ...document.querySelectorAll(
+        'nav button'
+      )
+    ].find(
+
+      b =>
+        b.textContent
+          .toLowerCase()
+          .includes(
+            target
+          )
+
+    );
 
 
   if(btn){
 
-    btn.classList.add('active');
+    btn.classList.add(
+      'active'
+    );
 
   }
 
@@ -3097,15 +3859,19 @@ function setViewByName(v){
 }
 
 
-/* =========================================================
+/* =====================================================
    MODAL
-   ========================================================= */
+===================================================== */
 
 function showModal(){
 
   document
-    .getElementById('modal')
-    .classList.add('show');
+    .getElementById(
+      'modal'
+    )
+    .classList.add(
+      'show'
+    );
 
 }
 
@@ -3113,27 +3879,37 @@ function showModal(){
 function closeModal(){
 
   document
-    .getElementById('modal')
-    .classList.remove('show');
+    .getElementById(
+      'modal'
+    )
+    .classList.remove(
+      'show'
+    );
 
 }
 
 
-/* =========================================================
+/* =====================================================
    BORRAR DATOS
-   ========================================================= */
+===================================================== */
 
 function resetAll(){
 
   if(
+
     confirm(
       '¿Seguro? Se borrarán todos los datos de Mis Escuelas en este dispositivo.'
     )
+
   ){
 
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(
+      KEY
+    );
 
-    localStorage.removeItem(OLD_KEY);
+    localStorage.removeItem(
+      OLD_KEY
+    );
 
     location.reload();
 
@@ -3142,15 +3918,14 @@ function resetAll(){
 }
 
 
-/* =========================================================
-   ARRANCAR APP
-   ========================================================= */
-
-persist();
+/* =====================================================
+   INICIAR APLICACIÓN
+===================================================== */
 
 init();
 
 </script>
 
 </body>
+
 </html>
