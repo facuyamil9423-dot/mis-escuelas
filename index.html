@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,6 +10,7 @@
   <title>Mis Escuelas ⚽</title>
 
   <style>
+
     :root {
       --bg: #f3f4f6;
       --card: #ffffff;
@@ -129,11 +131,10 @@
       background: #111827;
       color: white;
       cursor: pointer;
-      touch-action: manipulation;
     }
 
     .btn:active {
-      transform: scale(.98);
+      transform: scale(0.98);
     }
 
     .green {
@@ -299,7 +300,6 @@
       font: inherit;
       font-size: 11px;
       cursor: pointer;
-      touch-action: manipulation;
       padding: 5px 12px;
     }
 
@@ -312,12 +312,6 @@
       display: block;
       font-size: 20px;
       margin-bottom: 2px;
-    }
-
-    .two {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
     }
 
     @media (min-width: 600px) {
@@ -334,16 +328,26 @@
       .actions {
         grid-template-columns: 1fr 1fr 1fr;
       }
+
     }
+
   </style>
+
 </head>
+
 
 <body>
 
 <header>
+
   <h1>⚽ Mis Escuelas</h1>
-  <p>Gestión de jugadores, cuotas y pagos</p>
+
+  <p>
+    Gestión de jugadores, cuotas y pagos
+  </p>
+
 </header>
+
 
 <main>
 
@@ -356,7 +360,9 @@
     </div>
 
     <select id="school">
-      <option value="">Cargando escuelas...</option>
+      <option value="">
+        Cargando...
+      </option>
     </select>
 
   </div>
@@ -380,9 +386,7 @@
 
   <div class="sheet">
 
-    <h2 id="modalTitle">
-      Formulario
-    </h2>
+    <h2 id="modalTitle"></h2>
 
     <div id="form"></div>
 
@@ -467,332 +471,1320 @@
 
 <script>
 
-(function () {
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
 
-  "use strict";
+const SUPABASE_URL =
+  "https://inehoqxikbsuhguxxngz.supabase.co";
 
-  console.log("JAVASCRIPT DE MIS ESCUELAS CARGADO");
-
-
-  /* =====================================================
-     SUPABASE
-  ===================================================== */
-
-  const SUPABASE_URL =
-    "https://inehoqxikbsuhguxxngz.supabase.co";
-
-  const SUPABASE_KEY =
-    "sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h";
+const SUPABASE_KEY =
+  "sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h";
 
 
-  if (!window.supabase) {
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
+
+let data = {
+  schools: [],
+  players: [],
+  fees: [],
+  pagos: []
+};
+
+let currentView = "home";
+
+let currentSchool = "";
+
+let editingPlayerId = null;
+
+
+/* =========================================================
+   UTILIDADES
+========================================================= */
+
+function money(n) {
+
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0
+  }).format(Number(n) || 0);
+
+}
+
+
+function monthKey(d = new Date()) {
+
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0")
+  );
+
+}
+
+
+function monthName(key = monthKey()) {
+
+  const parts = key.split("-");
+
+  const y = Number(parts[0]);
+
+  const m = Number(parts[1]);
+
+  return new Date(y, m - 1, 1)
+    .toLocaleDateString("es-AR", {
+      month: "long",
+      year: "numeric"
+    });
+
+}
+
+
+function esc(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+
+function showMessage(text, type = "success") {
+
+  const box =
+    document.getElementById("message");
+
+  box.innerHTML =
+    `<div class="${type}">${esc(text)}</div>`;
+
+  setTimeout(function () {
+
+    box.innerHTML = "";
+
+  }, 4000);
+
+}
+
+
+/* =========================================================
+   CARGAR DATOS
+========================================================= */
+
+async function loadData() {
+
+  try {
+
+    showMessage(
+      "Conectando con Supabase...",
+      "success"
+    );
+
+
+    const schoolsResult =
+      await supabaseClient
+        .from("schools")
+        .select("*");
+
+
+    if (schoolsResult.error) {
+      throw schoolsResult.error;
+    }
+
+
+    const playersResult =
+      await supabaseClient
+        .from("players")
+        .select("*");
+
+
+    if (playersResult.error) {
+      throw playersResult.error;
+    }
+
+
+    const feesResult =
+      await supabaseClient
+        .from("fees")
+        .select("*");
+
+
+    if (feesResult.error) {
+      throw feesResult.error;
+    }
+
+
+    const pagosResult =
+      await supabaseClient
+        .from("pagos")
+        .select("*");
+
+
+    if (pagosResult.error) {
+      throw pagosResult.error;
+    }
+
+
+    data.schools =
+      schoolsResult.data || [];
+
+
+    data.players =
+      playersResult.data || [];
+
+
+    data.fees =
+      feesResult.data || [];
+
+
+    data.pagos =
+      pagosResult.data || [];
+
+
+    prepareSchools();
+
+    render();
+
+
+    showMessage(
+      "Datos sincronizados correctamente.",
+      "success"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "ERROR SUPABASE:",
+      error
+    );
+
 
     document.getElementById("app").innerHTML = `
+
       <div class="card">
-        <div class="error">
-          ❌ No se pudo cargar la biblioteca de Supabase.
-          <br><br>
-          Revisá tu conexión a Internet.
-        </div>
+
+        <h2>
+          ⚠️ No se pudo conectar
+        </h2>
+
+        <p>
+          La aplicación no pudo leer los datos.
+        </p>
+
+        <p class="small">
+          ${esc(error.message || error)}
+        </p>
+
+        <button
+          type="button"
+          class="btn blue"
+          onclick="loadData()">
+
+          🔄 Reintentar
+
+        </button>
+
       </div>
+
     `;
+
+  }
+
+}
+
+
+/* =========================================================
+   ESCUELAS
+========================================================= */
+
+function prepareSchools() {
+
+  const select =
+    document.getElementById("school");
+
+
+  if (!data.schools.length) {
+
+    select.innerHTML =
+      `<option value="">Sin escuelas</option>`;
+
+    currentSchool = "";
 
     return;
   }
 
 
-  const supabaseClient =
-    window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_KEY
+  select.innerHTML =
+    data.schools
+      .map(function(s) {
+
+        const name =
+          s.name ||
+          s.nombre ||
+          s.school ||
+          "";
+
+
+        return `
+          <option value="${esc(name)}">
+            ${esc(name)}
+          </option>
+        `;
+
+      })
+      .join("");
+
+
+  const names =
+    data.schools.map(function(s) {
+
+      return (
+        s.name ||
+        s.nombre ||
+        s.school ||
+        ""
+      );
+
+    });
+
+
+  if (
+    currentSchool &&
+    names.includes(currentSchool)
+  ) {
+
+    select.value = currentSchool;
+
+  } else {
+
+    currentSchool = names[0];
+
+    select.value = currentSchool;
+
+  }
+
+
+  select.onchange = function() {
+
+    currentSchool =
+      this.value;
+
+    render();
+
+  };
+
+}
+
+
+/* =========================================================
+   JUGADORES
+========================================================= */
+
+function schoolPlayers() {
+
+  return data.players.filter(function(p) {
+
+    const school =
+      p.school ||
+      p.school_name ||
+      p.escuela ||
+      "";
+
+
+    return school === currentSchool;
+
+  });
+
+}
+
+
+function activePlayers() {
+
+  return schoolPlayers()
+    .filter(function(p) {
+
+      return p.active !== false;
+
+    });
+
+}
+
+
+/* =========================================================
+   PAGOS
+========================================================= */
+
+function playerPayment(playerId, key) {
+
+  return data.pagos.find(function(p) {
+
+    const pid =
+      p.player_id ||
+      p.playerId;
+
+
+    const month =
+      p.month_key ||
+      p.monthKey;
+
+
+    const school =
+      p.school ||
+      p.escuela ||
+      "";
+
+
+    return (
+      String(pid) === String(playerId) &&
+      month === key &&
+      school === currentSchool
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   CUOTA
+========================================================= */
+
+function currentFee(key = monthKey()) {
+
+  const found =
+    data.fees.find(function(f) {
+
+      const school =
+        f.school ||
+        f.escuela ||
+        f.school_name ||
+        "";
+
+
+      const month =
+        f.month_key ||
+        f.monthKey ||
+        f.mes ||
+        "";
+
+
+      return (
+        school === currentSchool &&
+        month === key
+      );
+
+    });
+
+
+  if (found) {
+
+    return Number(
+      found.amount ||
+      found.monto ||
+      found.fee ||
+      0
+    );
+
+  }
+
+
+  return 20000;
+
+}
+
+
+/* =========================================================
+   RENDER PRINCIPAL
+========================================================= */
+
+function render() {
+
+  if (!currentSchool) {
+
+    document.getElementById("app").innerHTML = `
+
+      <div class="card">
+
+        <div class="empty">
+          No hay ninguna escuela disponible.
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  if (currentView === "home") {
+    home();
+  }
+
+  else if (currentView === "players") {
+    players();
+  }
+
+  else if (currentView === "payments") {
+    payments();
+  }
+
+  else if (currentView === "settings") {
+    settings();
+  }
+
+}
+
+
+/* =========================================================
+   INICIO
+========================================================= */
+
+function home() {
+
+  const key =
+    monthKey();
+
+
+  const list =
+    activePlayers();
+
+
+  const paid =
+    list.filter(function(p) {
+
+      return playerPayment(
+        p.id,
+        key
+      );
+
+    }).length;
+
+
+  const collected =
+    data.pagos
+      .filter(function(p) {
+
+        const school =
+          p.school ||
+          p.escuela ||
+          "";
+
+
+        const month =
+          p.month_key ||
+          p.monthKey;
+
+
+        return (
+          school === currentSchool &&
+          month === key
+        );
+
+      })
+      .reduce(function(total, p) {
+
+        return total +
+          Number(
+            p.amount ||
+            p.monto ||
+            0
+          );
+
+      }, 0);
+
+
+  const expected =
+    list.length *
+    currentFee(key);
+
+
+  const pending =
+    Math.max(
+      0,
+      expected - collected
     );
 
 
-  /* =====================================================
-     DATOS
-  ===================================================== */
+  document.getElementById("app").innerHTML = `
 
-  let data = {
+    <div class="grid">
 
-    schools: [],
-    players: [],
-    fees: [],
-    pagos: []
+      <div class="card">
+
+        <div class="label">
+          Jugadores activos
+        </div>
+
+        <div class="metric">
+          ${list.length}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          Pagaron este mes
+        </div>
+
+        <div class="metric">
+          ${paid}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          Recaudado
+        </div>
+
+        <div class="metric">
+          ${money(collected)}
+        </div>
+
+      </div>
+
+
+      <div class="card">
+
+        <div class="label">
+          Pendiente
+        </div>
+
+        <div class="metric">
+          ${money(pending)}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="openPlayer()">
+
+        ＋ Agregar jugador
+
+      </button>
+
+
+      <button
+        type="button"
+        class="btn blue"
+        onclick="openPayment()">
+
+        ✓ Registrar pago
+
+      </button>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2>
+        📅 Cuotas de ${esc(monthName(key))}
+      </h2>
+
+      ${pendingRows(list, key)}
+
+    </div>
+
+
+    <div class="notice">
+
+      💰 Cuota actual:
+      <b>${money(currentFee(key))}</b>
+
+      <br><br>
+
+      Los datos se guardan en Supabase.
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   PENDIENTES
+========================================================= */
+
+function pendingRows(list, key) {
+
+  const pending =
+    list.filter(function(p) {
+
+      return !playerPayment(
+        p.id,
+        key
+      );
+
+    });
+
+
+  if (!pending.length) {
+
+    return `
+
+      <div class="empty">
+        🎉 Todos los jugadores están al día.
+      </div>
+
+    `;
+
+  }
+
+
+  return pending.map(function(p) {
+
+    return `
+
+      <div class="row">
+
+        <div class="info">
+
+          <b>
+            ${esc(p.name)}
+          </b>
+
+          <span class="small">
+            ${esc(
+              p.category ||
+              "Sin categoría"
+            )}
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn green"
+          style="padding:8px 10px"
+          onclick="quickPay('${esc(p.id)}')">
+
+          Pagó
+
+        </button>
+
+      </div>
+
+    `;
+
+  }).join("");
+
+}
+
+
+/* =========================================================
+   VISTA JUGADORES
+========================================================= */
+
+function players() {
+
+  const list =
+    schoolPlayers();
+
+
+  document.getElementById("app").innerHTML = `
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="openPlayer()">
+
+        ＋ Nuevo jugador
+
+      </button>
+
+
+      <button
+        type="button"
+        class="btn ghost"
+        onclick="loadData()">
+
+        🔄 Actualizar
+
+      </button>
+
+    </div>
+
+
+    <input
+      id="search"
+      placeholder="🔎 Buscar jugador..."
+      oninput="filterPlayers()">
+
+
+    <div
+      class="card section"
+      id="playerList">
+
+      ${playerRows(list)}
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   FILAS JUGADORES
+========================================================= */
+
+function playerRows(list) {
+
+  if (!list.length) {
+
+    return `
+
+      <div class="empty">
+        No hay jugadores en esta escuela.
+      </div>
+
+    `;
+
+  }
+
+
+  return list.map(function(p) {
+
+    return `
+
+      <div class="row">
+
+        <div class="info">
+
+          <b>
+
+            ${esc(p.name)}
+
+            ${
+              p.active === false
+              ? `
+                <span class="badge warn">
+                  INACTIVO
+                </span>
+              `
+              : ""
+            }
+
+          </b>
+
+
+          <span class="small">
+
+            ${esc(
+              p.category ||
+              "Sin categoría"
+            )}
+
+            ·
+
+            ${esc(
+              p.phone ||
+              "Sin teléfono"
+            )}
+
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="btn"
+          style="padding:8px 10px"
+          onclick="openPlayer('${esc(p.id)}')">
+
+          Editar
+
+        </button>
+
+      </div>
+
+    `;
+
+  }).join("");
+
+}
+
+
+/* =========================================================
+   BUSCAR JUGADORES
+========================================================= */
+
+function filterPlayers() {
+
+  const input =
+    document.getElementById("search");
+
+
+  if (!input) {
+    return;
+  }
+
+
+  const q =
+    input.value
+      .toLowerCase()
+      .trim();
+
+
+  const list =
+    schoolPlayers()
+      .filter(function(p) {
+
+        const text =
+          [
+            p.name,
+            p.category,
+            p.phone
+          ]
+          .join(" ")
+          .toLowerCase();
+
+
+        return text.includes(q);
+
+      });
+
+
+  document.getElementById("playerList")
+    .innerHTML =
+    playerRows(list);
+
+}
+
+
+/* =========================================================
+   ABRIR JUGADOR
+========================================================= */
+
+function openPlayer(id = null) {
+
+  editingPlayerId = id;
+
+
+  const player =
+    id
+    ? data.players.find(function(p) {
+
+        return String(p.id) === String(id);
+
+      })
+    : {};
+
+
+  document.getElementById("modalTitle")
+    .textContent =
+    id
+    ? "Editar jugador"
+    : "Nuevo jugador";
+
+
+  document.getElementById("form").innerHTML = `
+
+    <div class="field">
+
+      <label>
+        Nombre y apellido *
+      </label>
+
+      <input
+        id="f_name"
+        value="${esc(player.name || "")}">
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Categoría
+      </label>
+
+      <input
+        id="f_category"
+        placeholder="Ej. Sub 14"
+        value="${esc(player.category || "")}">
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Fecha de nacimiento
+      </label>
+
+      <input
+        id="f_birth"
+        type="date"
+        value="${esc(player.birth || "")}">
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Padre / madre / tutor
+      </label>
+
+      <input
+        id="f_tutor"
+        value="${esc(player.tutor || "")}">
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Teléfono
+      </label>
+
+      <input
+        id="f_phone"
+        value="${esc(player.phone || "")}">
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Estado
+      </label>
+
+      <select id="f_active">
+
+        <option
+          value="true"
+          ${player.active !== false ? "selected" : ""}>
+
+          Activo
+
+        </option>
+
+
+        <option
+          value="false"
+          ${player.active === false ? "selected" : ""}>
+
+          Inactivo
+
+        </option>
+
+      </select>
+
+    </div>
+
+  `;
+
+
+  showModal();
+
+}
+
+
+/* =========================================================
+   GUARDAR JUGADOR
+========================================================= */
+
+async function savePlayer() {
+
+  const name =
+    document.getElementById("f_name")
+      .value
+      .trim();
+
+
+  if (!name) {
+
+    alert(
+      "Ingresá el nombre del jugador."
+    );
+
+    return;
+
+  }
+
+
+  const playerData = {
+
+    name: name,
+
+    category:
+      document.getElementById("f_category")
+        .value
+        .trim(),
+
+    birth:
+      document.getElementById("f_birth")
+        .value || null,
+
+    tutor:
+      document.getElementById("f_tutor")
+        .value
+        .trim(),
+
+    phone:
+      document.getElementById("f_phone")
+        .value
+        .trim(),
+
+    school:
+      currentSchool,
+
+    active:
+      document.getElementById("f_active")
+        .value === "true"
 
   };
 
 
-  let currentView = "home";
+  try {
 
-  let currentSchool = "";
+    if (editingPlayerId) {
 
-  let editingPlayerId = null;
+      const result =
+        await supabaseClient
+          .from("players")
+          .update(playerData)
+          .eq("id", editingPlayerId);
 
 
-  /* =====================================================
-     UTILIDADES
-  ===================================================== */
-
-  function money(n) {
-
-    return new Intl.NumberFormat(
-      "es-AR",
-      {
-        style: "currency",
-        currency: "ARS",
-        maximumFractionDigits: 0
+      if (result.error) {
+        throw result.error;
       }
-    ).format(Number(n) || 0);
 
-  }
+    }
+
+    else {
+
+      playerData.id =
+        "id_" +
+        Date.now() +
+        "_" +
+        Math.random()
+          .toString(36)
+          .substring(2, 9);
 
 
-  function monthKey(d = new Date()) {
+      const result =
+        await supabaseClient
+          .from("players")
+          .insert(playerData);
 
-    return (
-      d.getFullYear() +
-      "-" +
-      String(d.getMonth() + 1).padStart(2, "0")
+
+      if (result.error) {
+        throw result.error;
+      }
+
+    }
+
+
+    closeModal();
+
+    await loadData();
+
+
+    showMessage(
+      "Jugador guardado correctamente.",
+      "success"
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "No se pudo guardar el jugador:\n\n" +
+      error.message
     );
 
   }
 
+}
 
-  function monthName(key = monthKey()) {
 
-    const parts = key.split("-");
+/* =========================================================
+   VISTA PAGOS
+========================================================= */
 
-    const y = Number(parts[0]);
+function payments() {
 
-    const m = Number(parts[1]);
+  const key =
+    monthKey();
 
-    return new Date(y, m - 1, 1)
-      .toLocaleDateString(
-        "es-AR",
-        {
-          month: "long",
-          year: "numeric"
-        }
-      );
 
+  document.getElementById("app").innerHTML = `
+
+    <div class="card">
+
+      <div class="field">
+
+        <label>
+          Mes
+        </label>
+
+        <input
+          id="paymentMonth"
+          type="month"
+          value="${key}"
+          onchange="renderPayments()">
+
+      </div>
+
+    </div>
+
+
+    <div id="paymentsBody"></div>
+
+  `;
+
+
+  renderPayments();
+
+}
+
+
+/* =========================================================
+   RENDER PAGOS
+========================================================= */
+
+function renderPayments() {
+
+  const input =
+    document.getElementById("paymentMonth");
+
+
+  if (!input) {
+    return;
   }
 
 
-  function esc(value) {
-
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-
-  }
+  const key =
+    input.value ||
+    monthKey();
 
 
-  function showMessage(
-    text,
-    type = "success"
-  ) {
-
-    const box =
-      document.getElementById("message");
-
-    if (!box) return;
-
-    box.innerHTML =
-      `<div class="${type}">
-        ${esc(text)}
-      </div>`;
-
-    setTimeout(function () {
-
-      box.innerHTML = "";
-
-    }, 4000);
-
-  }
+  const list =
+    activePlayers();
 
 
-  /* =====================================================
-     CARGAR DATOS
-  ===================================================== */
+  const rows =
+    list.map(function(p) {
 
-  async function loadData() {
-
-    console.log("Cargando datos desde Supabase...");
-
-
-    try {
-
-      showMessage(
-        "Conectando con Supabase...",
-        "success"
-      );
-
-
-      const schoolsResult =
-        await supabaseClient
-          .from("schools")
-          .select("*");
-
-
-      console.log(
-        "RESULTADO SCHOOLS:",
-        schoolsResult
-      );
-
-
-      if (schoolsResult.error) {
-
-        throw new Error(
-          "Tabla schools: " +
-          schoolsResult.error.message
+      const payment =
+        playerPayment(
+          p.id,
+          key
         );
 
-      }
+
+      if (payment) {
+
+        return `
+
+          <div class="row">
+
+            <div class="info">
+
+              <b>
+                ${esc(p.name)}
+              </b>
+
+              <span class="small">
+
+                ${money(
+                  payment.amount ||
+                  payment.monto ||
+                  0
+                )}
+
+                ·
+
+                ${esc(
+                  payment.method ||
+                  payment.medio ||
+                  "Pago"
+                )}
+
+              </span>
+
+            </div>
 
 
-      const playersResult =
-        await supabaseClient
-          .from("players")
-          .select("*");
-
-
-      console.log(
-        "RESULTADO PLAYERS:",
-        playersResult
-      );
-
-
-      if (playersResult.error) {
-
-        throw new Error(
-          "Tabla players: " +
-          playersResult.error.message
-        );
-
-      }
-
-
-      const feesResult =
-        await supabaseClient
-          .from("fees")
-          .select("*");
-
-
-      console.log(
-        "RESULTADO FEES:",
-        feesResult
-      );
-
-
-      if (feesResult.error) {
-
-        throw new Error(
-          "Tabla fees: " +
-          feesResult.error.message
-        );
-
-      }
-
-
-      const pagosResult =
-        await supabaseClient
-          .from("pagos")
-          .select("*");
-
-
-      console.log(
-        "RESULTADO PAGOS:",
-        pagosResult
-      );
-
-
-      if (pagosResult.error) {
-
-        throw new Error(
-          "Tabla pagos: " +
-          pagosResult.error.message
-        );
-
-      }
-
-
-      data.schools =
-        schoolsResult.data || [];
-
-
-      data.players =
-        playersResult.data || [];
-
-
-      data.fees =
-        feesResult.data || [];
-
-
-      data.pagos =
-        pagosResult.data || [];
-
-
-      console.log(
-        "ESCUELAS CARGADAS:",
-        data.schools
-      );
-
-
-      console.log(
-        "JUGADORES CARGADOS:",
-        data.players
-      );
-
-
-      prepareSchools();
-
-      render();
-
-
-      showMessage(
-        "Datos sincronizados correctamente.",
-        "success"
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "ERROR GENERAL:",
-        error
-      );
-
-
-      document.getElementById("app").innerHTML = `
-
-        <div class="card">
-
-          <h2>
-            ⚠️ Error de conexión
-          </h2>
-
-          <p>
-            No se pudieron cargar los datos.
-          </p>
-
-          <div class="error">
-
-            ${esc(
-              error.message ||
-              String(error)
-            )}
+            <span class="badge paid">
+              PAGADO
+            </span>
 
           </div>
 
+        `;
+
+      }
+
+
+      return `
+
+        <div class="row">
+
+          <div class="info">
+
+            <b>
+              ${esc(p.name)}
+            </b>
+
+            <span class="small">
+              Sin pago registrado
+            </span>
+
+          </div>
+
+
           <button
             type="button"
-            class="btn blue"
-            onclick="loadData()">
+            class="btn green"
+            style="padding:8px 10px"
+            onclick="quickPay('${esc(p.id)}','${key}')">
 
-            🔄 Reintentar
+            Pagó
 
           </button>
 
@@ -800,1255 +1792,10 @@
 
       `;
 
-    }
+    }).join("");
 
-  }
 
-
-  /* =====================================================
-     ESCUELAS
-  ===================================================== */
-
-  function prepareSchools() {
-
-    const select =
-      document.getElementById("school");
-
-
-    if (!data.schools.length) {
-
-      select.innerHTML = `
-
-        <option value="">
-          ⚠️ No hay escuelas cargadas
-        </option>
-
-      `;
-
-      currentSchool = "";
-
-
-      document.getElementById("app")
-        .innerHTML = `
-
-          <div class="card">
-
-            <h2>
-              🏫 No hay escuelas
-            </h2>
-
-            <p>
-              Supabase respondió correctamente,
-              pero la tabla <b>schools</b> no tiene
-              registros visibles para esta aplicación.
-            </p>
-
-            <div class="notice">
-
-              Si ya tenés una escuela cargada,
-              probablemente sea un problema de
-              permisos RLS de la tabla
-              <b>schools</b>.
-
-            </div>
-
-            <br>
-
-            <button
-              type="button"
-              class="btn blue"
-              onclick="loadData()">
-
-              🔄 Volver a cargar
-
-            </button>
-
-          </div>
-
-        `;
-
-      return;
-
-    }
-
-
-    select.innerHTML =
-      data.schools
-        .map(function (s) {
-
-          const name =
-            s.name ||
-            s.nombre ||
-            s.school ||
-            "";
-
-
-          return `
-
-            <option value="${esc(name)}">
-
-              ${esc(name)}
-
-            </option>
-
-          `;
-
-        })
-        .join("");
-
-
-    if (
-      currentSchool &&
-      data.schools.some(function (s) {
-
-        return (
-          (s.name ||
-           s.nombre ||
-           s.school ||
-           "") ===
-          currentSchool
-        );
-
-      })
-    ) {
-
-      select.value =
-        currentSchool;
-
-    } else {
-
-      currentSchool =
-        data.schools[0].name ||
-        data.schools[0].nombre ||
-        data.schools[0].school ||
-        "";
-
-      select.value =
-        currentSchool;
-
-    }
-
-
-    select.onchange =
-      function () {
-
-        currentSchool =
-          this.value;
-
-        render();
-
-      };
-
-  }
-
-
-  /* =====================================================
-     JUGADORES
-  ===================================================== */
-
-  function schoolPlayers() {
-
-    return data.players.filter(
-      function (p) {
-
-        const school =
-          p.school ||
-          p.school_name ||
-          p.escuela ||
-          "";
-
-        return school === currentSchool;
-
-      }
-    );
-
-  }
-
-
-  function activePlayers() {
-
-    return schoolPlayers()
-      .filter(
-        function (p) {
-
-          return p.active !== false;
-
-        }
-      );
-
-  }
-
-
-  /* =====================================================
-     PAGOS
-  ===================================================== */
-
-  function playerPayment(
-    playerId,
-    key
-  ) {
-
-    return data.pagos.find(
-      function (p) {
-
-        const pid =
-          p.player_id ||
-          p.playerId;
-
-        const month =
-          p.month_key ||
-          p.monthKey;
-
-        const school =
-          p.school ||
-          p.escuela ||
-          "";
-
-        return (
-          String(pid) === String(playerId) &&
-          month === key &&
-          school === currentSchool
-        );
-
-      }
-    );
-
-  }
-
-
-  /* =====================================================
-     CUOTA
-  ===================================================== */
-
-  function currentFee(
-    key = monthKey()
-  ) {
-
-    const found =
-      data.fees.find(
-        function (f) {
-
-          const school =
-            f.school ||
-            f.escuela ||
-            f.school_name ||
-            "";
-
-          const month =
-            f.month_key ||
-            f.monthKey ||
-            f.mes ||
-            "";
-
-          return (
-            school === currentSchool &&
-            month === key
-          );
-
-        }
-      );
-
-
-    if (found) {
-
-      return Number(
-        found.amount ||
-        found.monto ||
-        found.fee ||
-        0
-      );
-
-    }
-
-
-    return 20000;
-
-  }
-
-
-  /* =====================================================
-     RENDER
-  ===================================================== */
-
-  function render() {
-
-    console.log(
-      "RENDER:",
-      currentView,
-      currentSchool
-    );
-
-
-    if (!currentSchool) {
-
-      return;
-
-    }
-
-
-    if (currentView === "home") {
-
-      home();
-
-    }
-
-    else if (currentView === "players") {
-
-      players();
-
-    }
-
-    else if (currentView === "payments") {
-
-      payments();
-
-    }
-
-    else if (currentView === "settings") {
-
-      settings();
-
-    }
-
-  }
-
-
-  /* =====================================================
-     INICIO
-  ===================================================== */
-
-  function home() {
-
-    const key =
-      monthKey();
-
-
-    const list =
-      activePlayers();
-
-
-    const paid =
-      list.filter(
-        function (p) {
-
-          return playerPayment(
-            p.id,
-            key
-          );
-
-        }
-      ).length;
-
-
-    const collected =
-      data.pagos
-        .filter(
-          function (p) {
-
-            const school =
-              p.school ||
-              p.escuela ||
-              "";
-
-            const month =
-              p.month_key ||
-              p.monthKey;
-
-            return (
-              school === currentSchool &&
-              month === key
-            );
-
-          }
-        )
-        .reduce(
-          function (total, p) {
-
-            return total +
-              Number(
-                p.amount ||
-                p.monto ||
-                0
-              );
-
-          },
-          0
-        );
-
-
-    const expected =
-      list.length *
-      currentFee(key);
-
-
-    const pending =
-      Math.max(
-        0,
-        expected - collected
-      );
-
-
-    document.getElementById("app")
-      .innerHTML = `
-
-      <div class="grid">
-
-        <div class="card">
-
-          <div class="label">
-            Jugadores activos
-          </div>
-
-          <div class="metric">
-            ${list.length}
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="label">
-            Pagaron este mes
-          </div>
-
-          <div class="metric">
-            ${paid}
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="label">
-            Recaudado
-          </div>
-
-          <div class="metric">
-            ${money(collected)}
-          </div>
-
-        </div>
-
-
-        <div class="card">
-
-          <div class="label">
-            Pendiente
-          </div>
-
-          <div class="metric">
-            ${money(pending)}
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="actions">
-
-        <button
-          type="button"
-          class="btn green"
-          onclick="openPlayer()">
-
-          ＋ Agregar jugador
-
-        </button>
-
-
-        <button
-          type="button"
-          class="btn blue"
-          onclick="openPayment()">
-
-          ✓ Registrar pago
-
-        </button>
-
-      </div>
-
-
-      <div class="card section">
-
-        <h2>
-          📅 Cuotas de ${esc(
-            monthName(key)
-          )}
-        </h2>
-
-        ${pendingRows(list, key)}
-
-      </div>
-
-
-      <div class="notice">
-
-        💰 Cuota actual:
-        <b>${money(
-          currentFee(key)
-        )}</b>
-
-        <br><br>
-
-        Escuela seleccionada:
-        <b>${esc(
-          currentSchool
-        )}</b>
-
-        <br><br>
-
-        Los datos se guardan en Supabase.
-
-      </div>
-
-    `;
-
-  }
-
-
-  function pendingRows(
-    list,
-    key
-  ) {
-
-    const pending =
-      list.filter(
-        function (p) {
-
-          return !playerPayment(
-            p.id,
-            key
-          );
-
-        }
-      );
-
-
-    if (!pending.length) {
-
-      return `
-
-        <div class="empty">
-
-          🎉 Todos los jugadores están al día.
-
-        </div>
-
-      `;
-
-    }
-
-
-    return pending
-      .map(
-        function (p) {
-
-          return `
-
-            <div class="row">
-
-              <div class="info">
-
-                <b>
-                  ${esc(p.name)}
-                </b>
-
-                <span class="small">
-
-                  ${esc(
-                    p.category ||
-                    "Sin categoría"
-                  )}
-
-                </span>
-
-              </div>
-
-
-              <button
-                type="button"
-                class="btn green"
-                style="padding:8px 10px"
-                onclick="quickPay('${esc(p.id)}')">
-
-                Pagó
-
-              </button>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-  }
-
-
-  /* =====================================================
-     JUGADORES
-  ===================================================== */
-
-  function players() {
-
-    const list =
-      schoolPlayers();
-
-
-    document.getElementById("app")
-      .innerHTML = `
-
-      <div class="actions">
-
-        <button
-          type="button"
-          class="btn green"
-          onclick="openPlayer()">
-
-          ＋ Nuevo jugador
-
-        </button>
-
-
-        <button
-          type="button"
-          class="btn ghost"
-          onclick="loadData()">
-
-          🔄 Actualizar
-
-        </button>
-
-      </div>
-
-
-      <input
-        id="search"
-        placeholder="🔎 Buscar jugador..."
-        oninput="filterPlayers()">
-
-
-      <div
-        class="card section"
-        id="playerList">
-
-        ${playerRows(list)}
-
-      </div>
-
-    `;
-
-  }
-
-
-  function playerRows(list) {
-
-    if (!list.length) {
-
-      return `
-
-        <div class="empty">
-
-          No hay jugadores en esta escuela.
-
-        </div>
-
-      `;
-
-    }
-
-
-    return list
-      .map(
-        function (p) {
-
-          return `
-
-            <div class="row">
-
-              <div class="info">
-
-                <b>
-
-                  ${esc(p.name)}
-
-                  ${
-                    p.active === false
-                      ? `
-                        <span class="badge warn">
-                          INACTIVO
-                        </span>
-                      `
-                      : ""
-                  }
-
-                </b>
-
-
-                <span class="small">
-
-                  ${esc(
-                    p.category ||
-                    "Sin categoría"
-                  )}
-
-                  ·
-
-                  ${esc(
-                    p.phone ||
-                    "Sin teléfono"
-                  )}
-
-                </span>
-
-              </div>
-
-
-              <button
-                type="button"
-                class="btn"
-                style="padding:8px 10px"
-                onclick="openPlayer('${esc(p.id)}')">
-
-                Editar
-
-              </button>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-  }
-
-
-  function filterPlayers() {
-
-    const input =
-      document.getElementById("search");
-
-
-    if (!input) return;
-
-
-    const q =
-      (
-        input.value ||
-        ""
-      )
-      .toLowerCase();
-
-
-    const list =
-      schoolPlayers()
-        .filter(
-          function (p) {
-
-            const text =
-              [
-                p.name,
-                p.category,
-                p.phone
-              ]
-              .join(" ")
-              .toLowerCase();
-
-
-            return text.includes(q);
-
-          }
-        );
-
-
-    const playerList =
-      document.getElementById(
-        "playerList"
-      );
-
-
-    if (playerList) {
-
-      playerList.innerHTML =
-        playerRows(list);
-
-    }
-
-  }
-
-
-  /* =====================================================
-     NUEVO / EDITAR JUGADOR
-  ===================================================== */
-
-  function openPlayer(
-    id = null
-  ) {
-
-    editingPlayerId =
-      id;
-
-
-    const player =
-      id
-        ? data.players.find(
-            function (p) {
-
-              return String(p.id) ===
-                String(id);
-
-            }
-          )
-        : {};
-
-
-    document.getElementById(
-      "modalTitle"
-    )
-    .textContent =
-      id
-        ? "Editar jugador"
-        : "Nuevo jugador";
-
-
-    document.getElementById(
-      "form"
-    )
-    .innerHTML = `
-
-      <div class="field">
-
-        <label>
-          Nombre y apellido *
-        </label>
-
-        <input
-          id="f_name"
-          value="${esc(
-            player.name || ""
-          )}">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Categoría
-        </label>
-
-        <input
-          id="f_category"
-          placeholder="Ej. Sub 14"
-          value="${esc(
-            player.category || ""
-          )}">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Fecha de nacimiento
-        </label>
-
-        <input
-          id="f_birth"
-          type="date"
-          value="${esc(
-            player.birth || ""
-          )}">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Padre / madre / tutor
-        </label>
-
-        <input
-          id="f_tutor"
-          value="${esc(
-            player.tutor || ""
-          )}">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Teléfono
-        </label>
-
-        <input
-          id="f_phone"
-          value="${esc(
-            player.phone || ""
-          )}">
-
-      </div>
-
-
-      <div class="field">
-
-        <label>
-          Estado
-        </label>
-
-        <select id="f_active">
-
-          <option
-            value="true"
-            ${
-              player.active !== false
-                ? "selected"
-                : ""
-            }>
-
-            Activo
-
-          </option>
-
-
-          <option
-            value="false"
-            ${
-              player.active === false
-                ? "selected"
-                : ""
-            }>
-
-            Inactivo
-
-          </option>
-
-        </select>
-
-      </div>
-
-    `;
-
-
-    showModal();
-
-  }
-
-
-  /* =====================================================
-     GUARDAR JUGADOR
-  ===================================================== */
-
-  async function savePlayer() {
-
-    const name =
-      document.getElementById(
-        "f_name"
-      )
-      .value
-      .trim();
-
-
-    if (!name) {
-
-      alert(
-        "Ingresá el nombre del jugador."
-      );
-
-      return;
-
-    }
-
-
-    const playerData = {
-
-      name: name,
-
-      category:
-        document.getElementById(
-          "f_category"
-        )
-        .value
-        .trim(),
-
-      birth:
-        document.getElementById(
-          "f_birth"
-        ).value || null,
-
-      tutor:
-        document.getElementById(
-          "f_tutor"
-        )
-        .value
-        .trim(),
-
-      phone:
-        document.getElementById(
-          "f_phone"
-        )
-        .value
-        .trim(),
-
-      school:
-        currentSchool,
-
-      active:
-        document.getElementById(
-          "f_active"
-        ).value === "true"
-
-    };
-
-
-    try {
-
-      if (editingPlayerId) {
-
-        const result =
-          await supabaseClient
-            .from("players")
-            .update(playerData)
-            .eq(
-              "id",
-              editingPlayerId
-            );
-
-
-        if (result.error) {
-
-          throw result.error;
-
-        }
-
-      }
-
-      else {
-
-        playerData.id =
-          "id_" +
-          Date.now() +
-          "_" +
-          Math.random()
-            .toString(36)
-            .substring(2, 9);
-
-
-        const result =
-          await supabaseClient
-            .from("players")
-            .insert(
-              playerData
-            );
-
-
-        if (result.error) {
-
-          throw result.error;
-
-        }
-
-      }
-
-
-      closeModal();
-
-      await loadData();
-
-
-      showMessage(
-        "Jugador guardado correctamente.",
-        "success"
-      );
-
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-
-      alert(
-        "No se pudo guardar el jugador:\n\n" +
-        error.message
-      );
-
-    }
-
-  }
-
-
-  /* =====================================================
-     PAGOS
-  ===================================================== */
-
-  function payments() {
-
-    const key =
-      monthKey();
-
-
-    document.getElementById(
-      "app"
-    )
-    .innerHTML = `
-
-      <div class="card">
-
-        <div class="field">
-
-          <label>
-            Mes
-          </label>
-
-          <input
-            id="paymentMonth"
-            type="month"
-            value="${key}"
-            onchange="renderPayments()">
-
-        </div>
-
-      </div>
-
-
-      <div id="paymentsBody"></div>
-
-    `;
-
-
-    renderPayments();
-
-  }
-
-
-  function renderPayments() {
-
-    const input =
-      document.getElementById(
-        "paymentMonth"
-      );
-
-
-    if (!input) return;
-
-
-    const key =
-      input.value ||
-      monthKey();
-
-
-    const list =
-      activePlayers();
-
-
-    const rows =
-      list
-        .map(
-          function (p) {
-
-            const payment =
-              playerPayment(
-                p.id,
-                key
-              );
-
-
-            if (payment) {
-
-              return `
-
-                <div class="row">
-
-                  <div class="info">
-
-                    <b>
-                      ${esc(p.name)}
-                    </b>
-
-                    <span class="small">
-
-                      ${money(
-                        payment.amount ||
-                        payment.monto ||
-                        0
-                      )}
-
-                      ·
-
-                      ${esc(
-                        payment.method ||
-                        payment.medio ||
-                        "Pago"
-                      )}
-
-                    </span>
-
-                  </div>
-
-
-                  <span class="badge paid">
-
-                    PAGADO
-
-                  </span>
-
-                </div>
-
-              `;
-
-            }
-
-
-            return `
-
-              <div class="row">
-
-                <div class="info">
-
-                  <b>
-                    ${esc(p.name)}
-                  </b>
-
-                  <span class="small">
-                    Sin pago registrado
-                  </span>
-
-                </div>
-
-
-                <button
-                  type="button"
-                  class="btn green"
-                  style="padding:8px 10px"
-                  onclick="quickPay('${esc(p.id)}','${key}')">
-
-                  Pagó
-
-                </button>
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
-
-
-    document.getElementById(
-      "paymentsBody"
-    )
+  document.getElementById("paymentsBody")
     .innerHTML = `
 
       <div class="actions">
@@ -2097,160 +1844,143 @@
 
     `;
 
-  }
+}
 
 
-  /* =====================================================
-     PAGO RÁPIDO
-  ===================================================== */
+/* =========================================================
+   PAGO RÁPIDO
+========================================================= */
 
-  async function quickPay(
-    playerId,
-    key = monthKey()
-  ) {
+async function quickPay(
+  playerId,
+  key = monthKey()
+) {
 
-    if (
-      playerPayment(
-        playerId,
-        key
-      )
-    ) {
-
-      alert(
-        "Este jugador ya figura como pagado."
-      );
-
-      return;
-
-    }
-
-
-    const amount =
-      currentFee(key);
-
-
-    const player =
-      data.players.find(
-        function (p) {
-
-          return String(p.id) ===
-            String(playerId);
-
-        }
-      );
-
-
-    if (!player) {
-
-      alert(
-        "No se encontró el jugador."
-      );
-
-      return;
-
-    }
-
-
-    const payment = {
-
-      id:
-        "pago_" +
-        Date.now() +
-        "_" +
-        Math.random()
-          .toString(36)
-          .substring(2, 8),
-
-      player_id:
-        playerId,
-
-      school:
-        currentSchool,
-
-      month_key:
-        key,
-
-      amount:
-        amount,
-
-      method:
-        "Efectivo",
-
-      note:
-        "",
-
-      date:
-        new Date().toISOString()
-
-    };
-
-
-    try {
-
-      const result =
-        await supabaseClient
-          .from("pagos")
-          .insert(
-            payment
-          );
-
-
-      if (result.error) {
-
-        throw result.error;
-
-      }
-
-
-      await loadData();
-
-
-      showMessage(
-        "Pago registrado correctamente.",
-        "success"
-      );
-
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-
-      alert(
-        "No se pudo registrar el pago:\n\n" +
-        error.message
-      );
-
-    }
-
-  }
-
-
-  /* =====================================================
-     FORMULARIO DE PAGO
-  ===================================================== */
-
-  function openPayment(
-    playerId = null,
-    key = monthKey()
-  ) {
-
-    const list =
-      activePlayers();
-
-
-    document.getElementById(
-      "modalTitle"
+  if (
+    playerPayment(
+      playerId,
+      key
     )
+  ) {
+
+    alert(
+      "Este jugador ya figura como pagado."
+    );
+
+    return;
+
+  }
+
+
+  const player =
+    data.players.find(function(p) {
+
+      return String(p.id) ===
+        String(playerId);
+
+    });
+
+
+  if (!player) {
+
+    alert(
+      "No se encontró el jugador."
+    );
+
+    return;
+
+  }
+
+
+  const payment = {
+
+    id:
+      "pago_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .substring(2, 8),
+
+    player_id:
+      playerId,
+
+    school:
+      currentSchool,
+
+    month_key:
+      key,
+
+    amount:
+      currentFee(key),
+
+    method:
+      "Efectivo",
+
+    note:
+      "",
+
+    date:
+      new Date().toISOString()
+
+  };
+
+
+  try {
+
+    const result =
+      await supabaseClient
+        .from("pagos")
+        .insert(payment);
+
+
+    if (result.error) {
+      throw result.error;
+    }
+
+
+    await loadData();
+
+
+    showMessage(
+      "Pago registrado correctamente.",
+      "success"
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "No se pudo registrar el pago:\n\n" +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ABRIR PAGO
+========================================================= */
+
+function openPayment(
+  playerId = null,
+  key = monthKey()
+) {
+
+  const list =
+    activePlayers();
+
+
+  document.getElementById("modalTitle")
     .textContent =
-      "Registrar pago";
+    "Registrar pago";
 
 
-    document.getElementById(
-      "form"
-    )
+  document.getElementById("form")
     .innerHTML = `
 
       <div class="field">
@@ -2261,30 +1991,26 @@
 
         <select id="f_player">
 
-          ${list
-            .map(
-              function (p) {
+          ${list.map(function(p) {
 
-                return `
+            return `
 
-                  <option
-                    value="${esc(p.id)}"
-                    ${
-                      String(p.id) ===
-                      String(playerId)
-                        ? "selected"
-                        : ""
-                    }>
+              <option
+                value="${esc(p.id)}"
+                ${
+                  String(p.id) ===
+                  String(playerId)
+                  ? "selected"
+                  : ""
+                }>
 
-                    ${esc(p.name)}
+                ${esc(p.name)}
 
-                  </option>
+              </option>
 
-                `;
+            `;
 
-              }
-            )
-            .join("")}
+          }).join("")}
 
         </select>
 
@@ -2363,207 +2089,189 @@
     `;
 
 
-    showModal();
+  showModal();
+
+}
+
+
+/* =========================================================
+   GUARDAR FORMULARIO
+========================================================= */
+
+async function saveForm() {
+
+  const playerField =
+    document.getElementById("f_player");
+
+
+  const categoryField =
+    document.getElementById("f_category");
+
+
+  if (
+    editingPlayerId !== null ||
+    categoryField
+  ) {
+
+    await savePlayer();
+
+    return;
 
   }
 
 
-  /* =====================================================
-     GUARDAR FORMULARIO
-  ===================================================== */
+  if (!playerField) {
 
-  async function saveForm() {
+    alert(
+      "No se pudo abrir el formulario."
+    );
 
-    const categoryField =
-      document.getElementById(
-        "f_category"
-      );
+    return;
 
-
-    if (
-      editingPlayerId !== null ||
-      categoryField
-    ) {
-
-      await savePlayer();
-
-      return;
-
-    }
+  }
 
 
-    const playerField =
-      document.getElementById(
-        "f_player"
-      );
+  const playerId =
+    playerField.value;
 
 
-    if (!playerField) {
-
-      alert(
-        "No se encontró el formulario."
-      );
-
-      return;
-
-    }
+  const key =
+    document.getElementById("f_month")
+      .value;
 
 
-    const playerId =
-      playerField.value;
+  const amount =
+    Number(
+      document.getElementById("f_amount")
+        .value
+    );
 
 
-    const key =
-      document.getElementById(
-        "f_month"
-      ).value;
+  const method =
+    document.getElementById("f_method")
+      .value;
 
 
-    const amount =
-      Number(
-        document.getElementById(
-          "f_amount"
-        ).value
-      );
-
-
-    const method =
-      document.getElementById(
-        "f_method"
-      ).value;
-
-
-    const note =
-      document.getElementById(
-        "f_note"
-      )
+  const note =
+    document.getElementById("f_note")
       .value
       .trim();
 
 
-    if (
-      !playerId ||
-      !key ||
-      !amount
-    ) {
+  if (
+    !playerId ||
+    !key ||
+    !amount
+  ) {
 
-      alert(
-        "Completá jugador, mes e importe."
-      );
+    alert(
+      "Completá jugador, mes e importe."
+    );
 
-      return;
-
-    }
-
-
-    if (
-      playerPayment(
-        playerId,
-        key
-      )
-    ) {
-
-      alert(
-        "Ese jugador ya tiene un pago registrado para ese mes."
-      );
-
-      return;
-
-    }
-
-
-    const payment = {
-
-      id:
-        "pago_" +
-        Date.now() +
-        "_" +
-        Math.random()
-          .toString(36)
-          .substring(2, 8),
-
-      player_id:
-        playerId,
-
-      school:
-        currentSchool,
-
-      month_key:
-        key,
-
-      amount:
-        amount,
-
-      method:
-        method,
-
-      note:
-        note,
-
-      date:
-        new Date().toISOString()
-
-    };
-
-
-    try {
-
-      const result =
-        await supabaseClient
-          .from("pagos")
-          .insert(
-            payment
-          );
-
-
-      if (result.error) {
-
-        throw result.error;
-
-      }
-
-
-      closeModal();
-
-      await loadData();
-
-
-      showMessage(
-        "Pago guardado correctamente.",
-        "success"
-      );
-
-
-    }
-
-    catch (error) {
-
-      console.error(error);
-
-
-      alert(
-        "No se pudo guardar el pago:\n\n" +
-        error.message
-      );
-
-    }
+    return;
 
   }
 
 
-  /* =====================================================
-     CONFIGURACIÓN
-  ===================================================== */
-
-  function settings() {
-
-    const key =
-      monthKey();
-
-
-    document.getElementById(
-      "app"
+  if (
+    playerPayment(
+      playerId,
+      key
     )
+  ) {
+
+    alert(
+      "Ese jugador ya tiene un pago registrado para ese mes."
+    );
+
+    return;
+
+  }
+
+
+  const payment = {
+
+    id:
+      "pago_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .substring(2, 8),
+
+    player_id:
+      playerId,
+
+    school:
+      currentSchool,
+
+    month_key:
+      key,
+
+    amount:
+      amount,
+
+    method:
+      method,
+
+    note:
+      note,
+
+    date:
+      new Date().toISOString()
+
+  };
+
+
+  try {
+
+    const result =
+      await supabaseClient
+        .from("pagos")
+        .insert(payment);
+
+
+    if (result.error) {
+      throw result.error;
+    }
+
+
+    closeModal();
+
+    await loadData();
+
+
+    showMessage(
+      "Pago guardado correctamente.",
+      "success"
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "No se pudo guardar el pago:\n\n" +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
+
+function settings() {
+
+  const key =
+    monthKey();
+
+
+  document.getElementById("app")
     .innerHTML = `
 
       <div class="card">
@@ -2576,8 +2284,7 @@
         <div class="field">
 
           <label>
-            Cuota de
-            ${esc(monthName(key))}
+            Cuota de ${esc(monthName(key))}
           </label>
 
           <input
@@ -2608,36 +2315,32 @@
         </h2>
 
         ${
-          data.schools
-            .map(
-              function (s) {
+          data.schools.map(function(s) {
 
-                const name =
-                  s.name ||
-                  s.nombre ||
-                  s.school ||
-                  "";
+            const name =
+              s.name ||
+              s.nombre ||
+              s.school ||
+              "";
 
 
-                return `
+            return `
 
-                  <div class="row">
+              <div class="row">
 
-                    <div class="info">
+                <div class="info">
 
-                      <b>
-                        ${esc(name)}
-                      </b>
+                  <b>
+                    ${esc(name)}
+                  </b>
 
-                    </div>
+                </div>
 
-                  </div>
+              </div>
 
-                `;
+            `;
 
-              }
-            )
-            .join("")
+          }).join("")
         }
 
       </div>
@@ -2671,272 +2374,261 @@
 
     `;
 
+}
+
+
+/* =========================================================
+   GUARDAR CUOTA
+========================================================= */
+
+async function saveFee() {
+
+  const input =
+    document.getElementById("fee");
+
+
+  if (!input) {
+    return;
   }
 
 
-  /* =====================================================
-     GUARDAR CUOTA
-  ===================================================== */
-
-  async function saveFee() {
-
-    const feeInput =
-      document.getElementById(
-        "fee"
-      );
+  const amount =
+    Number(input.value);
 
 
-    if (!feeInput) return;
+  if (!amount) {
+
+    alert(
+      "Ingresá una cuota válida."
+    );
+
+    return;
+
+  }
 
 
-    const amount =
-      Number(
-        feeInput.value
-      );
+  const key =
+    monthKey();
 
 
-    if (!amount) {
+  try {
 
-      alert(
-        "Ingresá una cuota válida."
-      );
+    const existing =
+      data.fees.find(function(f) {
 
-      return;
-
-    }
-
-
-    const key =
-      monthKey();
+        const school =
+          f.school ||
+          f.escuela ||
+          f.school_name ||
+          "";
 
 
-    try {
-
-      const existing =
-        data.fees.find(
-          function (f) {
-
-            const school =
-              f.school ||
-              f.escuela ||
-              f.school_name ||
-              "";
-
-            const month =
-              f.month_key ||
-              f.monthKey ||
-              f.mes ||
-              "";
+        const month =
+          f.month_key ||
+          f.monthKey ||
+          f.mes ||
+          "";
 
 
-            return (
-              school === currentSchool &&
-              month === key
-            );
-
-          }
+        return (
+          school === currentSchool &&
+          month === key
         );
 
-
-      if (existing) {
-
-        const result =
-          await supabaseClient
-            .from("fees")
-            .update({
-              amount: amount
-            })
-            .eq(
-              "id",
-              existing.id
-            );
+      });
 
 
-        if (result.error) {
+    if (existing) {
 
-          throw result.error;
+      const result =
+        await supabaseClient
+          .from("fees")
+          .update({
+            amount: amount
+          })
+          .eq("id", existing.id);
 
-        }
 
+      if (result.error) {
+        throw result.error;
       }
-
-      else {
-
-        const result =
-          await supabaseClient
-            .from("fees")
-            .insert({
-
-              id:
-                "fee_" +
-                Date.now(),
-
-              school:
-                currentSchool,
-
-              month_key:
-                key,
-
-              amount:
-                amount
-
-            });
-
-
-        if (result.error) {
-
-          throw result.error;
-
-        }
-
-      }
-
-
-      await loadData();
-
-
-      showMessage(
-        "Cuota guardada correctamente.",
-        "success"
-      );
-
 
     }
 
-    catch (error) {
+    else {
 
-      console.error(error);
+      const result =
+        await supabaseClient
+          .from("fees")
+          .insert({
+
+            id:
+              "fee_" +
+              Date.now(),
+
+            school:
+              currentSchool,
+
+            month_key:
+              key,
+
+            amount:
+              amount
+
+          });
 
 
-      alert(
-        "No se pudo guardar la cuota:\n\n" +
-        error.message
-      );
+      if (result.error) {
+        throw result.error;
+      }
 
     }
 
-  }
+
+    await loadData();
 
 
-  /* =====================================================
-     NAVEGACIÓN
-  ===================================================== */
-
-  function setView(
-    view,
-    button
-  ) {
-
-    console.log(
-      "CAMBIANDO VISTA:",
-      view
+    showMessage(
+      "Cuota guardada correctamente.",
+      "success"
     );
 
 
-    currentView =
-      view;
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "No se pudo guardar la cuota:\n\n" +
+      error.message
+    );
+
+  }
+
+}
 
 
-    document
-      .querySelectorAll(
-        "nav button"
-      )
-      .forEach(
-        function (b) {
+/* =========================================================
+   NAVEGACIÓN
+========================================================= */
 
-          b.classList.remove(
-            "active"
-          );
+function setView(
+  view,
+  button = null
+) {
 
-        }
-      );
-
-
-    if (button) {
-
-      button.classList.add(
-        "active"
-      );
-
-    }
+  console.log(
+    "CAMBIANDO VISTA:",
+    view
+  );
 
 
-    render();
+  currentView =
+    view;
+
+
+  document
+    .querySelectorAll("nav button")
+    .forEach(function(b) {
+
+      b.classList.remove("active");
+
+    });
+
+
+  if (button) {
+
+    button.classList.add("active");
 
   }
 
 
-  /* =====================================================
-     MODAL
-  ===================================================== */
+  render();
 
-  function showModal() {
-
-    document
-      .getElementById("modal")
-      .classList.add("show");
-
-  }
+}
 
 
-  function closeModal() {
+/* =========================================================
+   MODAL
+========================================================= */
 
-    document
-      .getElementById("modal")
-      .classList.remove("show");
+function showModal() {
 
+  document
+    .getElementById("modal")
+    .classList.add("show");
 
-    editingPlayerId =
-      null;
-
-  }
-
-
-  /* =====================================================
-     HACER FUNCIONES GLOBALES
-  ===================================================== */
-
-  window.setView =
-    setView;
-
-  window.openPlayer =
-    openPlayer;
-
-  window.openPayment =
-    openPayment;
-
-  window.saveForm =
-    saveForm;
-
-  window.closeModal =
-    closeModal;
-
-  window.quickPay =
-    quickPay;
-
-  window.filterPlayers =
-    filterPlayers;
-
-  window.renderPayments =
-    renderPayments;
-
-  window.loadData =
-    loadData;
-
-  window.saveFee =
-    saveFee;
+}
 
 
-  /* =====================================================
-     INICIAR
-  ===================================================== */
+function closeModal() {
 
-  loadData();
+  document
+    .getElementById("modal")
+    .classList.remove("show");
 
 
-})();
+  editingPlayerId =
+    null;
+
+}
+
+
+/* =========================================================
+   HACER FUNCIONES GLOBALES
+========================================================= */
+
+/*
+   IMPORTANTE:
+
+   Los botones HTML usan onclick.
+   Por eso dejamos estas funciones
+   disponibles en window.
+*/
+
+window.setView = setView;
+
+window.openPlayer = openPlayer;
+
+window.openPayment = openPayment;
+
+window.saveForm = saveForm;
+
+window.closeModal = closeModal;
+
+window.quickPay = quickPay;
+
+window.loadData = loadData;
+
+window.renderPayments = renderPayments;
+
+window.filterPlayers = filterPlayers;
+
+window.saveFee = saveFee;
+
+
+/* =========================================================
+   INICIO
+========================================================= */
+
+console.log(
+  "JAVASCRIPT DE MIS ESCUELAS CARGADO"
+);
+
+console.log(
+  "setView disponible:",
+  typeof window.setView
+);
+
+console.log(
+  "openPlayer disponible:",
+  typeof window.openPlayer
+);
+
+loadData();
 
 </script>
 
 </body>
+
 </html>
