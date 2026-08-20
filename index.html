@@ -173,16 +173,6 @@ select,input{
   color:#166534;
 }
 
-.pending{
-  background:#fee2e2;
-  color:#991b1b;
-}
-
-.bluebadge{
-  background:#dbeafe;
-  color:#1e40af;
-}
-
 .warn{
   background:#fef3c7;
   color:#92400e;
@@ -330,12 +320,6 @@ nav span{
   gap:10px;
 }
 
-.divider{
-  height:1px;
-  background:var(--line);
-  margin:14px 0;
-}
-
 @media(min-width:600px){
   .modal{
     align-items:center;
@@ -358,16 +342,16 @@ nav span{
 
 <header>
   <h1>⚽ Mis Escuelas</h1>
-  <p>Gestión de jugadores, cuotas, historial y comprobantes · v3</p>
+  <p>Gestión de jugadores, cuotas y reportes · v3</p>
 </header>
 
 <main>
   <div class="selector">
     <div class="small">ESCUELA / SEDE</div>
-    <select id="school"></select>
+    <select id="school" onchange="render()"></select>
   </div>
 
-  <div id="app"></div>
+  <div id="app"><div class="empty">Cargando datos...</div></div>
 </main>
 
 <div class="modal" id="modal">
@@ -402,29 +386,20 @@ nav span{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-/* =========================================================
-   SUPABASE CONFIG
-   ========================================================= */
-
 const SUPABASE_URL = 'https://inehoqxikbsuhguxxngz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h';
 
 let supabaseClient = null;
 
-if (typeof window.supabase !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
+if (typeof window.supabase !== 'undefined') {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
-
-/* =========================================================
-   ESTADO GLOBAL
-   ========================================================= */
 
 let data = {
   schools: [],
   players: [],
   fees: [],
-  payments: [],
-  feeHistory: {}
+  payments: []
 };
 
 let currentView = 'home';
@@ -433,68 +408,58 @@ let formType = null;
 let reportMonth = monthKey();
 let showInactive = false;
 
-const schoolSelect = document.getElementById('school');
-
 /* =========================================================
-   INICIALIZACIÓN Y LECTURA (SUPABASE)
+   INICIALIZACIÓN
    ========================================================= */
 
 async function init() {
   if (!supabaseClient) {
-    console.warn('Supabase no está configurado correctamente.');
+    alert('Error al conectar con Supabase. Revisa la consola.');
     return;
   }
 
-  await Promise.all([
-    loadSchools(),
-    loadPlayers(),
-    loadFees(),
-    loadPagos()
-  ]);
+  await reloadAllData();
+
+  if (data.schools.length === 0) {
+    const { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
+    if (!error && newS) data.schools = newS;
+  }
 
   renderSchoolOptions();
   render();
 }
 
-async function loadSchools() {
-  const { data: res, error } = await supabaseClient.from('schools').select('*');
-  if (error) console.error('Error escuelas:', error.message);
-  else if (res) data.schools = res;
-}
+async function reloadAllData() {
+  const [s, p, f, pay] = await Promise.all([
+    supabaseClient.from('schools').select('*'),
+    supabaseClient.from('players').select('*'),
+    supabaseClient.from('fees').select('*'),
+    supabaseClient.from('pagos').select('*')
+  ]);
 
-async function loadPlayers() {
-  const { data: res, error } = await supabaseClient.from('players').select('*');
-  if (error) console.error('Error jugadores:', error.message);
-  else if (res) data.players = res;
-}
-
-async function loadFees() {
-  const { data: res, error } = await supabaseClient.from('fees').select('*');
-  if (error) console.error('Error cuotas:', error.message);
-  else if (res) data.fees = res;
-}
-
-async function loadPagos() {
-  const { data: res, error } = await supabaseClient.from('pagos').select('*');
-  if (error) console.error('Error pagos:', error.message);
-  else if (res) data.payments = res;
+  data.schools = s.data || [];
+  data.players = p.data || [];
+  data.fees = f.data || [];
+  data.payments = pay.data || [];
 }
 
 function renderSchoolOptions() {
-  if (!schoolSelect) return;
-  if (!data.schools || data.schools.length === 0) {
-    schoolSelect.innerHTML = '<option value="">Sin escuelas</option>';
+  const select = document.getElementById('school');
+  if (!select) return;
+  
+  if (data.schools.length === 0) {
+    select.innerHTML = '<option value="">Sin escuelas</option>';
     return;
   }
-  schoolSelect.innerHTML = data.schools
-    .map((s, i) => `<option value="${s.id}">${esc(s.name || s.nombre || 'Escuela ' + (i+1))}</option>`)
-    .join('');
 
-  schoolSelect.onchange = render;
+  select.innerHTML = data.schools
+    .map(s => `<option value="${s.id}">${esc(s.name || s.nombre)}</option>`)
+    .join('');
 }
 
 function currentSchoolId() {
-  return schoolSelect ? schoolSelect.value : null;
+  const select = document.getElementById('school');
+  return select ? select.value : (data.schools[0]?.id || null);
 }
 
 function currentSchoolName() {
@@ -506,9 +471,13 @@ function currentSchoolName() {
    HELPERS & FORMATO
    ========================================================= */
 
-const money = n => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(n) || 0);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-const attr = s => esc(s);
+function money(n) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(n) || 0);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
 
 function monthKey(d = new Date()) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -557,11 +526,14 @@ function paymentsForMonth(key = reportMonth) {
    ========================================================= */
 
 function render() {
+  const app = document.getElementById('app');
+  if (!app) return;
+
   if (currentView === 'home') home();
-  if (currentView === 'players') players();
-  if (currentView === 'payments') payments();
-  if (currentView === 'reports') reports();
-  if (currentView === 'settings') settings();
+  else if (currentView === 'players') players();
+  else if (currentView === 'payments') payments();
+  else if (currentView === 'reports') reports();
+  else if (currentView === 'settings') settings();
 }
 
 function home() {
@@ -575,9 +547,9 @@ function home() {
   document.getElementById('app').innerHTML = `
     <div class="grid">
       <div class="card"><div class="label">Jugadores activos</div><div class="metric">${list.length}</div></div>
-      <div class="card"><div class="label">Pagaron ${esc(monthName(key))}</div><div class="metric">${paid}</div></div>
+      <div class="card"><div class="label">Pagaron (${esc(monthName(key))})</div><div class="metric">${paid}</div></div>
       <div class="card"><div class="label">Recaudado</div><div class="metric">${money(collected)}</div></div>
-      <div class="card"><div class="label">Pendiente estimado</div><div class="metric">${money(pending)}</div></div>
+      <div class="card"><div class="label">Pendiente est.</div><div class="metric">${money(pending)}</div></div>
     </div>
 
     <div class="actions">
@@ -587,26 +559,21 @@ function home() {
     </div>
 
     <div class="card section">
-      <h2>📅 Cuota de ${esc(monthName(key))}</h2>
+      <h2>📅 Cuotas pendientes de ${esc(monthName(key))}</h2>
       ${pendingRows(list, key)}
-    </div>
-
-    <div class="notice">
-      💡 Cuota del mes: <b>${money(fee(currentSchoolId(), key))}</b>.
-      Sincronizado directamente con Supabase.
     </div>
   `;
 }
 
 function pendingRows(list, key) {
   const pend = list.filter(p => !paymentFor(p.id, key));
-  if (!pend.length) return `<div class="empty">🎉 Todos los jugadores están al día.</div>`;
+  if (!pend.length) return `<div class="empty">🎉 Todos los jugadores están al día este mes.</div>`;
 
   return pend.map(p => `
     <div class="row">
       <div class="info">
         <b>${esc(p.name || p.nombre)}</b>
-        <span class="small">${esc(p.category || p.categoria || 'Sin categoría')}</span>
+        <span class="small">${esc(p.category || p.categoria || 'Sin cat.')}</span>
       </div>
       <button class="btn green" style="padding:8px 10px" onclick="quickPay('${p.id}')">Pagó</button>
     </div>
@@ -618,7 +585,7 @@ function players() {
   document.getElementById('app').innerHTML = `
     <div class="actions">
       <button class="btn green" onclick="openPlayer()">＋ Nuevo jugador</button>
-      <button class="btn ghost" onclick="toggleInactive()">👤 Ver activos/inactivos</button>
+      <button class="btn ghost" onclick="toggleInactive()">${showInactive ? '👁 Ver sólo activos' : '👁 Ver todos'}</button>
     </div>
     <input class="search" id="search" placeholder="🔎 Buscar jugador..." oninput="filterPlayers()">
     <div class="card" id="playerList">${playerRows(list)}</div>
@@ -627,11 +594,11 @@ function players() {
 
 function toggleInactive() {
   showInactive = !showInactive;
-  render();
+  players();
 }
 
 function playerRows(list) {
-  if (!list.length) return `<div class="empty">No hay jugadores en esta escuela.</div>`;
+  if (!list.length) return `<div class="empty">No hay jugadores cargados en esta sede.</div>`;
   let view = showInactive ? list : list.filter(p => p.active !== false);
   if (!view.length) return `<div class="empty">No hay jugadores activos.</div>`;
 
@@ -639,9 +606,9 @@ function playerRows(list) {
     <div class="row">
       <div class="info">
         <b>${esc(p.name || p.nombre)} ${p.active === false ? '<span class="badge warn">INACTIVO</span>' : ''}</b>
-        <span class="small">${esc(p.category || p.categoria || 'Sin categoría')} · ${esc(p.phone || p.telefono || 'Sin teléfono')}</span>
+        <span class="small">${esc(p.category || p.categoria || 'Sin cat.')} · ${esc(p.phone || p.telefono || 'Sin tel.')}</span>
       </div>
-      <button class="btn" style="padding:8px 10px" onclick="openPlayer('${p.id}')">Editar</button>
+      <button class="btn ghost" style="padding:8px 10px" onclick="openPlayer('${p.id}')">Editar</button>
     </div>
   `).join('');
 }
@@ -666,12 +633,12 @@ function payments() {
           <input type="month" id="payMonth" value="${key}" onchange="renderPaymentsMonth()">
         </div>
         <div class="field">
-          <label>Cuota aplicada</label>
+          <label>Cuota configurada</label>
           <input value="${money(fee(currentSchoolId(), key))}" disabled>
         </div>
       </div>
     </div>
-    <div id="paymentsBody"></div>
+    <div id="paymentsBody" class="section"></div>
   `;
   renderPaymentsMonth();
 }
@@ -688,11 +655,11 @@ function renderPaymentsMonth() {
         <div class="row">
           <div class="info">
             <b>${esc(p.name || p.nombre)}</b>
-            <span class="small">${money(x.amount || x.monto)} · ${esc(x.method || x.medio_pago)} · ${formatDate(x.created_at || x.date)}</span>
+            <span class="small">${money(x.amount || x.monto)} · ${esc(x.method || x.medio_pago || 'Efectivo')} · ${formatDate(x.created_at || x.date)}</span>
           </div>
           <div>
-            <span class="badge paid">PAGADA</span>
-            <button class="btn ghost" style="padding:7px 9px;margin-left:5px" onclick="receipt('${x.id}')">🧾</button>
+            <span class="badge paid">PAGADO</span>
+            <button class="btn ghost" style="padding:6px 9px;margin-left:4px" onclick="receipt('${x.id}')">🧾</button>
           </div>
         </div>
       `;
@@ -701,7 +668,7 @@ function renderPaymentsMonth() {
       <div class="row">
         <div class="info">
           <b>${esc(p.name || p.nombre)}</b>
-          <span class="small">Sin pago registrado</span>
+          <span class="small" style="color:var(--red)">Sin pago en este mes</span>
         </div>
         <button class="btn green" style="padding:8px 10px" onclick="quickPay('${p.id}','${key}')">Pagó</button>
       </div>
@@ -711,11 +678,11 @@ function renderPaymentsMonth() {
   document.getElementById('paymentsBody').innerHTML = `
     <div class="actions">
       <button class="btn blue" onclick="openPayment(null,'${key}')">＋ Registrar pago</button>
-      <button class="btn ghost" onclick="exportCSV('${key}')">📥 Exportar mes</button>
+      <button class="btn ghost" onclick="exportCSV('${key}')">📥 Exportar CSV</button>
     </div>
     <div class="card">
-      <h2 style="margin-top:0">Cuotas · ${esc(monthName(key))}</h2>
-      ${rows || '<div class="empty">No hay jugadores.</div>'}
+      <h2>Estadísticas de ${esc(monthName(key))}</h2>
+      ${rows || '<div class="empty">No hay jugadores activos en esta sede.</div>'}
     </div>
   `;
 }
@@ -732,15 +699,15 @@ function reports() {
 
   let methods = {};
   pay.forEach(p => {
-    const m = p.method || p.medio_pago || 'Otro';
+    const m = p.method || p.medio_pago || 'Efectivo';
     methods[m] = (methods[m] || 0) + Number(p.amount || p.monto || 0);
   });
 
   document.getElementById('app').innerHTML = `
     <div class="card">
       <div class="field">
-        <label>Reporte mensual</label>
-        <input type="month" id="reportMonth" value="${key}" onchange="reportMonth=this.value; render();">
+        <label>Mes de reporte</label>
+        <input type="month" id="reportMonth" value="${key}" onchange="reportMonth=this.value; reports();">
       </div>
     </div>
 
@@ -752,11 +719,14 @@ function reports() {
     </div>
 
     <div class="card">
-      <h2 style="margin-top:0">📊 Resumen de ${esc(monthName(key))}</h2>
-      <p class="small">Cuota estimada: ${money(fee(currentSchoolId(), key))}</p>
+      <h2>📊 Totales por medio de pago</h2>
       <table class="table">
-        <tr><th>Medio de pago</th><th class="right">Importe</th></tr>
-        ${Object.keys(methods).length ? Object.entries(methods).map(([m, v]) => `<tr><td>${esc(m)}</td><td class="right">${money(v)}</td></tr>`).join('') : '<tr><td colspan="2">Sin pagos registrados.</td></tr>'}
+        <thead><tr><th>Medio</th><th class="right">Total</th></tr></thead>
+        <tbody>
+        ${Object.keys(methods).length 
+          ? Object.entries(methods).map(([m, v]) => `<tr><td>${esc(m)}</td><td class="right">${money(v)}</td></tr>`).join('') 
+          : '<tr><td colspan="2" class="empty">No hay registros este mes.</td></tr>'}
+        </tbody>
       </table>
     </div>
   `;
@@ -768,30 +738,30 @@ function settings() {
 
   document.getElementById('app').innerHTML = `
     <div class="card">
-      <h2 style="margin-top:0">⚙️ Configuración</h2>
+      <h2>⚙️ Configurar cuota actual</h2>
       <div class="field">
-        <label>Cuota para ${esc(monthName(key))}</label>
+        <label>Monto cuota (${esc(monthName(key))})</label>
         <input id="fee" type="number" inputmode="decimal" value="${fee(sId, key)}">
       </div>
-      <button class="btn green" style="width:100%" onclick="saveFee()">Guardar cuota en Supabase</button>
+      <button class="btn green" style="width:100%" onclick="saveFee()">Guardar cuota</button>
     </div>
 
     <div class="card section">
-      <h2 style="margin-top:0">Escuelas / sedes</h2>
+      <h2>🏫 Sedes / Escuelas</h2>
       ${data.schools.map((x) => `
         <div class="row">
           <div class="info"><b>${esc(x.name || x.nombre)}</b></div>
         </div>
       `).join('')}
       <div class="actions">
-        <button class="btn green" onclick="addSchool()">＋ Agregar escuela</button>
+        <button class="btn green" onclick="addSchool()">＋ Agregar sede</button>
       </div>
     </div>
   `;
 }
 
 /* =========================================================
-   FORMULARIOS Y OPERACIONES (SUPABASE ESCRITURA)
+   FORMULARIOS Y OPERACIONES (SUPABASE)
    ========================================================= */
 
 function openPlayer(idValue) {
@@ -801,11 +771,11 @@ function openPlayer(idValue) {
 
   document.getElementById('modalTitle').textContent = idValue ? 'Editar jugador' : 'Nuevo jugador';
   document.getElementById('form').innerHTML = `
-    <div class="field"><label>Nombre y apellido *</label><input id="f_name" value="${attr(p.name || p.nombre || '')}"></div>
-    <div class="field"><label>Categoría</label><input id="f_cat" placeholder="Ej. Sub 14" value="${attr(p.category || p.categoria || '')}"></div>
-    <div class="field"><label>Fecha de nacimiento</label><input id="f_birth" type="date" value="${attr(p.birth || p.fecha_nacimiento || '')}"></div>
-    <div class="field"><label>Padre / madre / tutor</label><input id="f_tutor" value="${attr(p.tutor || '')}"></div>
-    <div class="field"><label>Teléfono</label><input id="f_phone" inputmode="tel" value="${attr(p.phone || p.telefono || '')}"></div>
+    <div class="field"><label>Nombre y Apellido *</label><input id="f_name" value="${esc(p.name || p.nombre || '')}"></div>
+    <div class="field"><label>Categoría</label><input id="f_cat" placeholder="Ej. 2012 / Sub 15" value="${esc(p.category || p.categoria || '')}"></div>
+    <div class="field"><label>Fecha de Nacimiento</label><input id="f_birth" type="date" value="${esc(p.birth || p.fecha_nacimiento || '')}"></div>
+    <div class="field"><label>Tutor / Responsable</label><input id="f_tutor" value="${esc(p.tutor || '')}"></div>
+    <div class="field"><label>Teléfono</label><input id="f_phone" inputmode="tel" value="${esc(p.phone || p.telefono || '')}"></div>
     <div class="field">
       <label>Estado</label>
       <select id="f_active">
@@ -822,7 +792,12 @@ function openPayment(playerId = null, key = monthKey()) {
   editId = null;
   const list = ps();
 
-  document.getElementById('modalTitle').textContent = 'Registrar cuota';
+  if (!list.length) {
+    alert('Primero debes crear al menos un jugador activo.');
+    return;
+  }
+
+  document.getElementById('modalTitle').textContent = 'Registrar pago';
   document.getElementById('form').innerHTML = `
     <div class="field">
       <label>Jugador *</label>
@@ -841,14 +816,14 @@ function openPayment(playerId = null, key = monthKey()) {
         <option>Otro</option>
       </select>
     </div>
-    <div class="field"><label>Observación</label><input id="f_note" placeholder="Opcional"></div>
+    <div class="field"><label>Observaciones</label><input id="f_note" placeholder="Opcional"></div>
   `;
   showModal();
 }
 
 async function quickPay(playerId, key = monthKey()) {
   if (paymentFor(playerId, key)) {
-    alert('Este jugador ya figura como pagado en este mes.');
+    alert('Este jugador ya figura con la cuota pagada en este mes.');
     return;
   }
 
@@ -862,9 +837,9 @@ async function quickPay(playerId, key = monthKey()) {
   }]);
 
   if (error) {
-    alert('Error guardando en Supabase: ' + error.message);
+    alert('Error guardando pago: ' + error.message);
   } else {
-    await loadPagos();
+    await reloadAllData();
     render();
   }
 }
@@ -872,7 +847,7 @@ async function quickPay(playerId, key = monthKey()) {
 async function saveForm() {
   if (formType === 'player') {
     const name = document.getElementById('f_name').value.trim();
-    if (!name) return alert('Ingresá el nombre.');
+    if (!name) return alert('Ingresá el nombre del jugador.');
 
     const payload = {
       name: name,
@@ -887,15 +862,15 @@ async function saveForm() {
     if (editId) payload.id = editId;
 
     const { error } = await supabaseClient.from('players').upsert(payload);
-    if (error) alert('Error en Supabase: ' + error.message);
-    else await loadPlayers();
+    if (error) alert('Error al guardar jugador: ' + error.message);
+    else await reloadAllData();
 
   } else if (formType === 'payment') {
     const pid = document.getElementById('f_player').value;
     const key = document.getElementById('f_month').value;
     const amount = Number(document.getElementById('f_amount').value) || 0;
 
-    if (!pid || !key || !amount) return alert('Completá jugador, mes e importe.');
+    if (!pid || !key || !amount) return alert('Completa todos los campos obligatorios.');
 
     const { error } = await supabaseClient.from('pagos').insert([{
       player_id: pid,
@@ -907,8 +882,8 @@ async function saveForm() {
       created_at: new Date().toISOString()
     }]);
 
-    if (error) alert('Error al guardar pago: ' + error.message);
-    else await loadPagos();
+    if (error) alert('Error al guardar el pago: ' + error.message);
+    else await reloadAllData();
   }
 
   closeModal();
@@ -918,7 +893,7 @@ async function saveForm() {
 async function saveFee() {
   const v = Number(document.getElementById('fee').value);
   const key = monthKey();
-  if (!v) return alert('Ingresá una cuota válida.');
+  if (!v) return alert('Ingresa un monto válido.');
 
   const { error } = await supabaseClient.from('fees').upsert({
     school_id: currentSchoolId(),
@@ -928,19 +903,19 @@ async function saveFee() {
 
   if (error) alert('Error al actualizar cuota: ' + error.message);
   else {
-    alert('Cuota guardada.');
-    await loadFees();
+    alert('Cuota guardada con éxito.');
+    await reloadAllData();
     render();
   }
 }
 
 async function addSchool() {
-  const n = prompt('Nombre de la nueva escuela / sede:');
+  const n = prompt('Nombre de la nueva sede / escuela:');
   if (n && n.trim()) {
     const { error } = await supabaseClient.from('schools').insert([{ name: n.trim() }]);
     if (error) alert('Error agregando escuela: ' + error.message);
     else {
-      await loadSchools();
+      await reloadAllData();
       renderSchoolOptions();
       render();
     }
@@ -984,11 +959,13 @@ function receipt(paymentId) {
       <div class="box">
         <h2>⚽ ${esc(currentSchoolName())}</h2>
         <p>Comprobante de Pago</p>
+        <hr>
         <div class="row"><span>Jugador:</span><b>${esc(p.name || p.nombre || '')}</b></div>
         <div class="row"><span>Período:</span><b>${esc(pmt.month_key || pmt.monthKey)}</b></div>
         <div class="row"><span>Monto:</span><b>${money(pmt.amount || pmt.monto)}</b></div>
         <div class="row"><span>Medio:</span><b>${esc(pmt.method || pmt.medio_pago || 'Efectivo')}</b></div>
-        <button onclick="window.print()">Imprimir</button>
+        <br>
+        <button onclick="window.print()">Imprimir comprobante</button>
       </div>
     </body>
     </html>
@@ -1013,8 +990,8 @@ function exportCSV(key) {
   a.click();
 }
 
-// Inicialización general
-document.addEventListener('DOMContentLoaded', init);
+// Inicialización de la App
+window.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
