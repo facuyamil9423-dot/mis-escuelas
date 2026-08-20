@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <title>Mis Escuelas ⚽</title>
+
+<!-- Supabase JS Client desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
@@ -382,35 +384,28 @@ nav span{
 }
 
 @media(min-width:600px){
-
   .modal{
     align-items:center;
     padding:20px;
   }
-
   .sheet{
     border-radius:20px;
   }
-
   .actions{
     grid-template-columns:repeat(3,1fr);
   }
-
   .reportbar{
     grid-template-columns:repeat(4,1fr);
   }
 }
 
 @media(max-width:480px){
-
   .grid{
     grid-template-columns:1fr 1fr;
   }
-
   .two{
     grid-template-columns:1fr;
   }
-
   .actions{
     grid-template-columns:1fr 1fr;
   }
@@ -426,27 +421,20 @@ nav span{
 </header>
 
 <main>
-
   <div class="selector">
     <div class="small">ESCUELA / SEDE</div>
     <select id="school"></select>
   </div>
 
   <div id="app"></div>
-
 </main>
 
 <!-- MODAL -->
 <div class="modal" id="modal">
-
   <div class="sheet">
-
     <h2 id="modalTitle"></h2>
-
     <div id="form"></div>
-
     <div class="actions">
-
       <button
         type="button"
         class="btn green"
@@ -460,76 +448,74 @@ nav span{
         onclick="closeModal()">
         Cancelar
       </button>
-
     </div>
-
   </div>
-
 </div>
 
 <!-- NAVEGACIÓN -->
 <nav>
-
   <button
     type="button"
     data-view="home"
     class="active"
     onclick="navigate('home')">
-
     <span>🏠</span>
     Inicio
-
   </button>
 
   <button
     type="button"
     data-view="players"
     onclick="navigate('players')">
-
     <span>👥</span>
     Jugadores
-
   </button>
 
   <button
     type="button"
     data-view="payments"
     onclick="navigate('payments')">
-
     <span>💰</span>
     Cuotas
-
   </button>
 
   <button
     type="button"
     data-view="reports"
     onclick="navigate('reports')">
-
     <span>📊</span>
     Reportes
-
   </button>
 
   <button
     type="button"
     data-view="settings"
     onclick="navigate('settings')">
-
     <span>⚙️</span>
     Opciones
-
   </button>
-
 </nav>
 
 <script>
 
 /* =========================================================
-   CONFIGURACIÓN
+   CONFIGURACIÓN Y SUPABASE (OPCIONAL)
    ========================================================= */
 
 const STORAGE_KEY = "misEscuelas_v4";
+
+// Reemplaza con las credenciales de tu proyecto Supabase si deseas sincronizar
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+
+let supabaseClient = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) {
+    console.error("Error al inicializar Supabase:", e);
+  }
+}
 
 const DEFAULT_SCHOOLS = [
   "Semillitas",
@@ -543,15 +529,10 @@ const DEFAULT_SCHOOLS = [
    ========================================================= */
 
 let data = null;
-
 let currentView = "home";
-
 let editId = null;
-
 let formType = null;
-
 let reportMonth = monthKey();
-
 let showInactive = false;
 
 
@@ -559,28 +540,25 @@ let showInactive = false;
    ELEMENTOS
    ========================================================= */
 
-const app =
-  document.getElementById("app");
-
-const schoolSelect =
-  document.getElementById("school");
-
-const modal =
-  document.getElementById("modal");
-
-const modalTitle =
-  document.getElementById("modalTitle");
-
-const form =
-  document.getElementById("form");
+const app = document.getElementById("app");
+const schoolSelect = document.getElementById("school");
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const form = document.getElementById("form");
 
 
 /* =========================================================
-   FUNCIONES GENERALES
+   FUNCIONES GENERALES Y LIMPIEZA DE DATOS
    ========================================================= */
 
-function money(value){
+// Convierte cadenas vacías ("") a NULL para evitar errores de tipo Date en BD/Supabase
+function cleanValue(val) {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'string' && val.trim() === '') return null;
+  return val;
+}
 
+function money(value){
   return new Intl.NumberFormat(
     "es-AR",
     {
@@ -589,15 +567,11 @@ function money(value){
       maximumFractionDigits:0
     }
   ).format(Number(value) || 0);
-
 }
 
-
 function esc(value){
-
   return String(value ?? "")
     .replace(/[&<>"']/g,function(char){
-
       const map = {
         "&":"&amp;",
         "<":"&lt;",
@@ -605,94 +579,47 @@ function esc(value){
         '"':"&quot;",
         "'":"&#39;"
       };
-
       return map[char];
-
     });
-
 }
-
 
 function attr(value){
-
   return esc(value);
-
 }
 
-
 function makeId(){
-
   return (
     "id_" +
     Date.now() +
     "_" +
-    Math.random()
-      .toString(36)
-      .substring(2,10)
+    Math.random().toString(36).substring(2,10)
   );
-
 }
 
-
 function monthKey(date = new Date()){
-
   return (
     date.getFullYear() +
     "-" +
-    String(date.getMonth()+1)
-      .padStart(2,"0")
+    String(date.getMonth()+1).padStart(2,"0")
   );
-
 }
-
 
 function monthName(key = monthKey()){
-
-  const parts =
-    String(key)
-      .split("-")
-      .map(Number);
-
-  if(
-    parts.length !== 2 ||
-    !parts[0] ||
-    !parts[1]
-  ){
+  const parts = String(key).split("-").map(Number);
+  if(parts.length !== 2 || !parts[0] || !parts[1]){
     return key;
   }
-
-  return new Date(
-    parts[0],
-    parts[1]-1,
-    1
-  ).toLocaleDateString(
+  return new Date(parts[0], parts[1]-1, 1).toLocaleDateString(
     "es-AR",
-    {
-      month:"long",
-      year:"numeric"
-    }
+    { month:"long", year:"numeric" }
   );
-
 }
 
-
 function formatDate(value){
-
-  if(!value){
-    return "";
-  }
-
-  const date =
-    new Date(value);
-
-  if(isNaN(date.getTime())){
-    return String(value);
-  }
-
-  return date.toLocaleDateString(
-    "es-AR"
-  );
-
+  if(!value) return "";
+  const date = new Date(value);
+  if(isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("es-AR");
 }
 
 
@@ -701,159 +628,65 @@ function formatDate(value){
    ========================================================= */
 
 function createEmptyData(){
-
   return {
-
-    schools:[
-      ...DEFAULT_SCHOOLS
-    ],
-
+    schools:[...DEFAULT_SCHOOLS],
     players:[],
-
     payments:[],
-
     expenses:[],
-
     fees:{},
-
     feeHistory:{}
-
   };
-
 }
 
-
 function loadData(){
-
   let saved = null;
-
   try{
-
-    saved =
-      localStorage.getItem(
-        STORAGE_KEY
-      );
-
+    saved = localStorage.getItem(STORAGE_KEY);
   }catch(error){
-
-    console.error(
-      "No se pudo acceder a localStorage.",
-      error
-    );
-
+    console.error("No se pudo acceder a localStorage.", error);
   }
 
   if(saved){
-
     try{
-
-      data =
-        JSON.parse(saved);
-
+      data = JSON.parse(saved);
     }catch(error){
-
-      console.error(
-        "Los datos guardados están dañados.",
-        error
-      );
-
-      data =
-        createEmptyData();
-
+      console.error("Los datos guardados están dañados.", error);
+      data = createEmptyData();
     }
-
   }else{
-
-    data =
-      createEmptyData();
-
-  }
-
-  normalizeData();
-
-}
-
-
-function normalizeData(){
-
-  if(!data || typeof data !== "object"){
     data = createEmptyData();
   }
 
-  if(!Array.isArray(data.schools)){
-    data.schools = [];
-  }
-
-  if(!Array.isArray(data.players)){
-    data.players = [];
-  }
-
-  if(!Array.isArray(data.payments)){
-    data.payments = [];
-  }
-
-  if(!Array.isArray(data.expenses)){
-    data.expenses = [];
-  }
-
-  if(
-    !data.fees ||
-    typeof data.fees !== "object"
-  ){
-    data.fees = {};
-  }
-
-  if(
-    !data.feeHistory ||
-    typeof data.feeHistory !== "object"
-  ){
-    data.feeHistory = {};
-  }
-
-  if(data.schools.length === 0){
-
-    data.schools =
-      [...DEFAULT_SCHOOLS];
-
-  }
-
-  data.schools =
-    [...new Set(
-      data.schools
-        .map(String)
-        .map(x => x.trim())
-        .filter(Boolean)
-    )];
-
+  normalizeData();
 }
 
+function normalizeData(){
+  if(!data || typeof data !== "object") data = createEmptyData();
+  if(!Array.isArray(data.schools)) data.schools = [];
+  if(!Array.isArray(data.players)) data.players = [];
+  if(!Array.isArray(data.payments)) data.payments = [];
+  if(!Array.isArray(data.expenses)) data.expenses = [];
+  if(!data.fees || typeof data.fees !== "object") data.fees = {};
+  if(!data.feeHistory || typeof data.feeHistory !== "object") data.feeHistory = {};
 
-function persist(){
-
-  try{
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
-    );
-
-    return true;
-
-  }catch(error){
-
-    console.error(
-      "No se pudieron guardar los datos.",
-      error
-    );
-
-    alert(
-      "No se pudieron guardar los datos en este dispositivo."
-    );
-
-    return false;
-
+  if(data.schools.length === 0){
+    data.schools = [...DEFAULT_SCHOOLS];
   }
 
+  data.schools = [...new Set(
+    data.schools.map(String).map(x => x.trim()).filter(Boolean)
+  )];
+}
+
+function persist(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  }catch(error){
+    console.error("No se pudieron guardar los datos.", error);
+    alert("No se pudieron guardar los datos en este dispositivo.");
+    return false;
+  }
 }
 
 
@@ -862,57 +695,23 @@ function persist(){
    ========================================================= */
 
 function currentSchool(){
-
-  if(!data.schools.length){
-    return "";
-  }
-
-  const index =
-    Number(
-      schoolSelect.value
-    );
-
-  if(
-    Number.isInteger(index) &&
-    index >= 0 &&
-    index < data.schools.length
-  ){
+  if(!data.schools.length) return "";
+  const index = Number(schoolSelect.value);
+  if(Number.isInteger(index) && index >= 0 && index < data.schools.length){
     return data.schools[index];
   }
-
   return data.schools[0];
-
 }
 
-
 function populateSchools(){
+  const previous = schoolSelect.value;
+  schoolSelect.innerHTML = data.schools
+    .map((name, index) => `<option value="${index}">${esc(name)}</option>`)
+    .join("");
 
-  const previous =
-    schoolSelect.value;
-
-  schoolSelect.innerHTML =
-    data.schools
-      .map(function(name,index){
-
-        return `
-          <option value="${index}">
-            ${esc(name)}
-          </option>
-        `;
-
-      })
-      .join("");
-
-  if(
-    previous !== "" &&
-    Number(previous) < data.schools.length
-  ){
-
-    schoolSelect.value =
-      previous;
-
+  if(previous !== "" && Number(previous) < data.schools.length){
+    schoolSelect.value = previous;
   }
-
 }
 
 
@@ -921,29 +720,11 @@ function populateSchools(){
    ========================================================= */
 
 function activePlayers(){
-
-  return data.players.filter(function(player){
-
-    return (
-      player.school === currentSchool() &&
-      player.active !== false
-    );
-
-  });
-
+  return data.players.filter(player => player.school === currentSchool() && player.active !== false);
 }
 
-
 function allSchoolPlayers(){
-
-  return data.players.filter(function(player){
-
-    return (
-      player.school === currentSchool()
-    );
-
-  });
-
+  return data.players.filter(player => player.school === currentSchool());
 }
 
 
@@ -951,90 +732,38 @@ function allSchoolPlayers(){
    CUOTAS
    ========================================================= */
 
-function getFee(
-  schoolName = currentSchool(),
-  key = monthKey()
-){
-
-  const history =
-    data.feeHistory[schoolName];
-
-  if(
-    history &&
-    history[key] !== undefined
-  ){
-
-    return Number(
-      history[key]
-    ) || 0;
-
+function getFee(schoolName = currentSchool(), key = monthKey()){
+  const history = data.feeHistory[schoolName];
+  if(history && history[key] !== undefined){
+    return Number(history[key]) || 0;
   }
-
-  if(
-    data.fees[schoolName] !== undefined
-  ){
-
-    return Number(
-      data.fees[schoolName]
-    ) || 0;
-
+  if(data.fees[schoolName] !== undefined){
+    return Number(data.fees[schoolName]) || 0;
   }
-
   return 20000;
-
 }
 
-
-function setFeeForMonth(
-  schoolName,
-  key,
-  value
-){
-
+function setFeeForMonth(schoolName, key, value){
   if(!data.feeHistory[schoolName]){
     data.feeHistory[schoolName] = {};
   }
-
-  data.feeHistory[schoolName][key] =
-    Number(value);
-
-  data.fees[schoolName] =
-    Number(value);
-
+  data.feeHistory[schoolName][key] = Number(value);
+  data.fees[schoolName] = Number(value);
 }
 
-
-function findPayment(
-  playerId,
-  key = monthKey()
-){
-
-  return data.payments.find(function(payment){
-
-    return (
-      payment.playerId === playerId &&
-      payment.school === currentSchool() &&
-      payment.monthKey === key
-    );
-
-  });
-
+function findPayment(playerId, key = monthKey()){
+  return data.payments.find(payment => 
+    payment.playerId === playerId &&
+    payment.school === currentSchool() &&
+    payment.monthKey === key
+  );
 }
 
-
-function paymentsForMonth(
-  key = monthKey()
-){
-
-  return data.payments.filter(function(payment){
-
-    return (
-      payment.school === currentSchool() &&
-      payment.monthKey === key
-    );
-
-  });
-
+function paymentsForMonth(key = monthKey()){
+  return data.payments.filter(payment =>
+    payment.school === currentSchool() &&
+    payment.monthKey === key
+  );
 }
 
 
@@ -1043,53 +772,19 @@ function paymentsForMonth(
    ========================================================= */
 
 function navigate(view){
-
-  const validViews = [
-    "home",
-    "players",
-    "payments",
-    "reports",
-    "settings"
-  ];
-
-  if(
-    !validViews.includes(view)
-  ){
-    view = "home";
-  }
+  const validViews = ["home", "players", "payments", "reports", "settings"];
+  if(!validViews.includes(view)) view = "home";
 
   currentView = view;
-
-  document
-    .querySelectorAll("nav button")
-    .forEach(function(button){
-
-      button.classList.toggle(
-        "active",
-        button.dataset.view === view
-      );
-
-    });
+  document.querySelectorAll("nav button").forEach(button => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
 
   render();
-
 }
 
-
-/* Compatibilidad con las llamadas anteriores */
-
-function setView(view){
-
-  navigate(view);
-
-}
-
-
-function setViewByName(view){
-
-  navigate(view);
-
-}
+function setView(view){ navigate(view); }
+function setViewByName(view){ navigate(view); }
 
 
 /* =========================================================
@@ -1097,59 +792,23 @@ function setViewByName(view){
    ========================================================= */
 
 function render(){
-
   try{
-
-    if(currentView === "home"){
-      renderHome();
-      return;
-    }
-
-    if(currentView === "players"){
-      renderPlayers();
-      return;
-    }
-
-    if(currentView === "payments"){
-      renderPayments();
-      return;
-    }
-
-    if(currentView === "reports"){
-      renderReports();
-      return;
-    }
-
-    if(currentView === "settings"){
-      renderSettings();
-      return;
-    }
-
+    if(currentView === "home") return renderHome();
+    if(currentView === "players") return renderPlayers();
+    if(currentView === "payments") return renderPayments();
+    if(currentView === "reports") return renderReports();
+    if(currentView === "settings") return renderSettings();
     navigate("home");
-
   }catch(error){
-
-    console.error(
-      "Error al mostrar la pantalla:",
-      error
-    );
-
+    console.error("Error al mostrar la pantalla:", error);
     app.innerHTML = `
       <div class="card">
         <h2>⚠️ Ocurrió un error</h2>
-        <p class="small">
-          La aplicación encontró un problema al mostrar esta pantalla.
-        </p>
-        <button
-          class="btn"
-          onclick="navigate('home')">
-          Volver al inicio
-        </button>
+        <p class="small">La aplicación encontró un problema al mostrar esta pantalla.</p>
+        <button class="btn" onclick="navigate('home')">Volver al inicio</button>
       </div>
     `;
-
   }
-
 }
 
 
@@ -1158,219 +817,69 @@ function render(){
    ========================================================= */
 
 function renderHome(){
-
-  const list =
-    activePlayers();
-
-  const key =
-    monthKey();
-
-  const paidCount =
-    list.filter(function(player){
-
-      return Boolean(
-        findPayment(
-          player.id,
-          key
-        )
-      );
-
-    }).length;
-
-  const payments =
-    paymentsForMonth(key);
-
-  const collected =
-    payments.reduce(function(total,payment){
-
-      return (
-        total +
-        Number(payment.amount || 0)
-      );
-
-    },0);
-
-  const expected =
-    list.length *
-    getFee(
-      currentSchool(),
-      key
-    );
-
-  const pending =
-    Math.max(
-      0,
-      expected - collected
-    );
+  const list = activePlayers();
+  const key = monthKey();
+  const paidCount = list.filter(player => Boolean(findPayment(player.id, key))).length;
+  const payments = paymentsForMonth(key);
+  const collected = payments.reduce((total, p) => total + Number(p.amount || 0), 0);
+  const expected = list.length * getFee(currentSchool(), key);
+  const pending = Math.max(0, expected - collected);
 
   app.innerHTML = `
-
     <div class="grid">
-
       <div class="card">
-        <div class="label">
-          Jugadores activos
-        </div>
-
-        <div class="metric">
-          ${list.length}
-        </div>
+        <div class="label">Jugadores activos</div>
+        <div class="metric">${list.length}</div>
       </div>
-
       <div class="card">
-        <div class="label">
-          Pagaron este mes
-        </div>
-
-        <div class="metric">
-          ${paidCount}
-        </div>
+        <div class="label">Pagaron este mes</div>
+        <div class="metric">${paidCount}</div>
       </div>
-
       <div class="card">
-        <div class="label">
-          Recaudado
-        </div>
-
-        <div class="metric">
-          ${money(collected)}
-        </div>
+        <div class="label">Recaudado</div>
+        <div class="metric">${money(collected)}</div>
       </div>
-
       <div class="card">
-        <div class="label">
-          Pendiente estimado
-        </div>
-
-        <div class="metric">
-          ${money(pending)}
-        </div>
+        <div class="label">Pendiente estimado</div>
+        <div class="metric">${money(pending)}</div>
       </div>
-
     </div>
-
 
     <div class="actions">
-
-      <button
-        type="button"
-        class="btn green"
-        onclick="openPlayer()">
-        ＋ Agregar jugador
-      </button>
-
-      <button
-        type="button"
-        class="btn blue"
-        onclick="openPayment()">
-        ✓ Registrar pago
-      </button>
-
-      <button
-        type="button"
-        class="btn amber"
-        onclick="navigate('reports')">
-        📊 Ver reporte
-      </button>
-
+      <button type="button" class="btn green" onclick="openPlayer()">＋ Agregar jugador</button>
+      <button type="button" class="btn blue" onclick="openPayment()">✓ Registrar pago</button>
+      <button type="button" class="btn amber" onclick="navigate('reports')">📊 Ver reporte</button>
     </div>
-
 
     <div class="card section">
-
-      <h2>
-        📅 Cuota de ${esc(monthName(key))}
-      </h2>
-
-      ${renderPendingRows(list,key)}
-
+      <h2>📅 Cuota de ${esc(monthName(key))}</h2>
+      ${renderPendingRows(list, key)}
     </div>
-
 
     <div class="notice">
-
-      💡 Cuota actual:
-      <b>
-        ${money(
-          getFee(
-            currentSchool(),
-            key
-          )
-        )}
-      </b>.
-
-      Podés modificarla desde
-      ⚙️ Opciones.
-
+      💡 Cuota actual: <b>${money(getFee(currentSchool(), key))}</b>.
+      Podés modificarla desde ⚙️ Opciones.
     </div>
-
   `;
-
 }
 
-
-function renderPendingRows(
-  list,
-  key
-){
-
-  const pending =
-    list.filter(function(player){
-
-      return !findPayment(
-        player.id,
-        key
-      );
-
-    });
-
+function renderPendingRows(list, key){
+  const pending = list.filter(player => !findPayment(player.id, key));
   if(!pending.length){
-
-    return `
-      <div class="empty">
-        🎉 Todos los jugadores están al día.
-      </div>
-    `;
-
+    return `<div class="empty">🎉 Todos los jugadores están al día.</div>`;
   }
 
-  return pending.map(function(player){
-
-    return `
-
-      <div class="row">
-
-        <div class="info">
-
-          <b>
-            ${esc(player.name)}
-          </b>
-
-          <span class="small">
-            ${esc(
-              player.category ||
-              "Sin categoría"
-            )}
-          </span>
-
-        </div>
-
-        <button
-          type="button"
-          class="btn green"
-          style="padding:8px 10px"
-          onclick="quickPay('${attr(player.id)}','${attr(key)}')">
-
-          Pagó
-
-        </button>
-
+  return pending.map(player => `
+    <div class="row">
+      <div class="info">
+        <b>${esc(player.name)}</b>
+        <span class="small">${esc(player.category || "Sin categoría")}</span>
       </div>
-
-    `;
-
-  }).join("");
-
+      <button type="button" class="btn green" style="padding:8px 10px" onclick="quickPay('${attr(player.id)}','${attr(key)}')">
+        Pagó
+      </button>
+    </div>
+  `).join("");
 }
 
 
@@ -1379,197 +888,64 @@ function renderPendingRows(
    ========================================================= */
 
 function renderPlayers(){
-
-  const list =
-    allSchoolPlayers();
-
+  const list = allSchoolPlayers();
   app.innerHTML = `
-
     <div class="actions">
-
-      <button
-        type="button"
-        class="btn green"
-        onclick="openPlayer()">
-
-        ＋ Nuevo jugador
-
+      <button type="button" class="btn green" onclick="openPlayer()">＋ Nuevo jugador</button>
+      <button type="button" class="btn ghost" onclick="toggleInactive()">
+        👤 ${showInactive ? "Ocultar inactivos" : "Ver activos/inactivos"}
       </button>
-
-      <button
-        type="button"
-        class="btn ghost"
-        onclick="toggleInactive()">
-
-        👤
-        ${
-          showInactive
-          ? "Ocultar inactivos"
-          : "Ver activos/inactivos"
-        }
-
-      </button>
-
     </div>
 
+    <input class="search" id="playerSearch" placeholder="🔎 Buscar jugador..." oninput="filterPlayers()">
 
-    <input
-      class="search"
-      id="playerSearch"
-      placeholder="🔎 Buscar jugador..."
-      oninput="filterPlayers()"
-    >
-
-
-    <div
-      class="card"
-      id="playerList">
-
+    <div class="card" id="playerList">
       ${playerRows(list)}
-
     </div>
-
   `;
-
 }
-
 
 function toggleInactive(){
-
-  showInactive =
-    !showInactive;
-
+  showInactive = !showInactive;
   render();
-
 }
-
 
 function playerRows(list){
-
-  let view =
-    showInactive
-      ? list
-      : list.filter(function(player){
-
-          return player.active !== false;
-
-        });
-
+  let view = showInactive ? list : list.filter(player => player.active !== false);
   if(!view.length){
-
-    return `
-      <div class="empty">
-        No hay jugadores para mostrar.
-      </div>
-    `;
-
+    return `<div class="empty">No hay jugadores para mostrar.</div>`;
   }
 
-  return view.map(function(player){
-
-    return `
-
-      <div class="row">
-
-        <div class="info">
-
-          <b>
-
-            ${esc(player.name)}
-
-            ${
-              player.active === false
-              ?
-              `
-                <span class="badge warn">
-                  INACTIVO
-                </span>
-              `
-              :
-              ""
-            }
-
-          </b>
-
-          <span class="small">
-
-            ${esc(
-              player.category ||
-              "Sin categoría"
-            )}
-
-            ·
-
-            ${esc(
-              player.phone ||
-              "Sin teléfono"
-            )}
-
-          </span>
-
-        </div>
-
-        <button
-          type="button"
-          class="btn"
-          style="padding:8px 10px"
-          onclick="openPlayer('${attr(player.id)}')">
-
-          Editar
-
-        </button>
-
+  return view.map(player => `
+    <div class="row">
+      <div class="info">
+        <b>
+          ${esc(player.name)}
+          ${player.active === false ? '<span class="badge warn">INACTIVO</span>' : ''}
+        </b>
+        <span class="small">
+          ${esc(player.category || "Sin categoría")} · ${esc(player.phone || "Sin teléfono")}
+        </span>
       </div>
-
-    `;
-
-  }).join("");
-
+      <button type="button" class="btn" style="padding:8px 10px" onclick="openPlayer('${attr(player.id)}')">
+        Editar
+      </button>
+    </div>
+  `).join("");
 }
 
-
 function filterPlayers(){
+  const input = document.getElementById("playerSearch");
+  const container = document.getElementById("playerList");
+  if(!input || !container) return;
 
-  const input =
-    document.getElementById(
-      "playerSearch"
-    );
+  const query = input.value.trim().toLowerCase();
+  const filtered = allSchoolPlayers().filter(player => {
+    const text = [player.name, player.category, player.phone, player.tutor].join(" ").toLowerCase();
+    return text.includes(query);
+  });
 
-  const container =
-    document.getElementById(
-      "playerList"
-    );
-
-  if(!input || !container){
-    return;
-  }
-
-  const query =
-    input.value
-      .trim()
-      .toLowerCase();
-
-  const filtered =
-    allSchoolPlayers()
-      .filter(function(player){
-
-        const text =
-          [
-            player.name,
-            player.category,
-            player.phone,
-            player.tutor
-          ]
-          .join(" ")
-          .toLowerCase();
-
-        return text.includes(query);
-
-      });
-
-  container.innerHTML =
-    playerRows(filtered);
-
+  container.innerHTML = playerRows(filtered);
 }
 
 
@@ -1578,230 +954,77 @@ function filterPlayers(){
    ========================================================= */
 
 function renderPayments(){
-
-  const key =
-    monthKey();
-
+  const key = monthKey();
   app.innerHTML = `
-
     <div class="card">
-
       <div class="two">
-
         <div class="field">
-
-          <label>
-            Mes a consultar
-          </label>
-
-          <input
-            type="month"
-            id="payMonth"
-            value="${key}"
-            onchange="renderPaymentsMonth()"
-          >
-
+          <label>Mes a consultar</label>
+          <input type="month" id="payMonth" value="${key}" onchange="renderPaymentsMonth()">
         </div>
-
         <div class="field">
-
-          <label>
-            Cuota aplicada
-          </label>
-
-          <input
-            id="payFee"
-            value="${money(
-              getFee(
-                currentSchool(),
-                key
-              )
-            )}"
-            disabled
-          >
-
+          <label>Cuota aplicada</label>
+          <input id="payFee" value="${money(getFee(currentSchool(), key))}" disabled>
         </div>
-
       </div>
-
     </div>
-
     <div id="paymentsBody"></div>
-
   `;
-
   renderPaymentsMonth();
-
 }
 
-
 function renderPaymentsMonth(){
+  const monthInput = document.getElementById("payMonth");
+  if(!monthInput) return;
 
-  const monthInput =
-    document.getElementById(
-      "payMonth"
-    );
+  const key = monthInput.value || monthKey();
+  const list = activePlayers();
 
-  if(!monthInput){
-    return;
-  }
-
-  const key =
-    monthInput.value ||
-    monthKey();
-
-  const list =
-    activePlayers();
-
-  const rows =
-    list.map(function(player){
-
-      const payment =
-        findPayment(
-          player.id,
-          key
-        );
-
-      if(payment){
-
-        return `
-
-          <div class="row">
-
-            <div class="info">
-
-              <b>
-                ${esc(player.name)}
-              </b>
-
-              <span class="small">
-
-                ${money(payment.amount)}
-
-                ·
-
-                ${esc(
-                  payment.method ||
-                  "Sin especificar"
-                )}
-
-                ·
-
-                ${formatDate(payment.date)}
-
-              </span>
-
-            </div>
-
-            <div>
-
-              <span class="badge paid">
-                PAGADA
-              </span>
-
-              <button
-                type="button"
-                class="btn ghost"
-                style="padding:7px 9px;margin-left:5px"
-                onclick="receipt('${attr(payment.id)}')">
-
-                🧾
-
-              </button>
-
-            </div>
-
-          </div>
-
-        `;
-
-      }
-
+  const rows = list.map(player => {
+    const payment = findPayment(player.id, key);
+    if(payment){
       return `
-
         <div class="row">
-
           <div class="info">
-
-            <b>
-              ${esc(player.name)}
-            </b>
-
+            <b>${esc(player.name)}</b>
             <span class="small">
-              Sin pago registrado
+              ${money(payment.amount)} · ${esc(payment.method || "Sin especificar")} · ${formatDate(payment.date)}
             </span>
-
           </div>
-
-          <button
-            type="button"
-            class="btn green"
-            style="padding:8px 10px"
-            onclick="quickPay('${attr(player.id)}','${attr(key)}')">
-
-            Pagó
-
-          </button>
-
+          <div>
+            <span class="badge paid">PAGADA</span>
+            <button type="button" class="btn ghost" style="padding:7px 9px;margin-left:5px" onclick="receipt('${attr(payment.id)}')">🧾</button>
+          </div>
         </div>
-
       `;
+    }
 
-    }).join("");
+    return `
+      <div class="row">
+        <div class="info">
+          <b>${esc(player.name)}</b>
+          <span class="small">Sin pago registrado</span>
+        </div>
+        <button type="button" class="btn green" style="padding:8px 10px" onclick="quickPay('${attr(player.id)}','${attr(key)}')">
+          Pagó
+        </button>
+      </div>
+    `;
+  }).join("");
 
-  const body =
-    document.getElementById(
-      "paymentsBody"
-    );
-
-  if(!body){
-    return;
-  }
+  const body = document.getElementById("paymentsBody");
+  if(!body) return;
 
   body.innerHTML = `
-
     <div class="actions">
-
-      <button
-        type="button"
-        class="btn blue"
-        onclick="openPayment(null,'${attr(key)}')">
-
-        ＋ Registrar pago
-
-      </button>
-
-      <button
-        type="button"
-        class="btn ghost"
-        onclick="exportCSV('${attr(key)}')">
-
-        📥 Exportar mes
-
-      </button>
-
+      <button type="button" class="btn blue" onclick="openPayment(null,'${attr(key)}')">＋ Registrar pago</button>
+      <button type="button" class="btn ghost" onclick="exportCSV('${attr(key)}')">📥 Exportar mes</button>
     </div>
-
-
     <div class="card">
-
-      <h2 style="margin-top:0">
-        Cuotas · ${esc(monthName(key))}
-      </h2>
-
-      ${
-        rows ||
-        `
-          <div class="empty">
-            No hay jugadores activos.
-          </div>
-        `
-      }
-
+      <h2 style="margin-top:0">Cuotas · ${esc(monthName(key))}</h2>
+      ${rows || '<div class="empty">No hay jugadores activos.</div>'}
     </div>
-
   `;
-
 }
 
 
@@ -1810,377 +1033,87 @@ function renderPaymentsMonth(){
    ========================================================= */
 
 function renderReports(){
-
-  const key =
-    reportMonth ||
-    monthKey();
-
-  const list =
-    activePlayers();
-
-  const payments =
-    paymentsForMonth(key);
-
-  const paidIds =
-    new Set(
-      payments.map(
-        payment =>
-          payment.playerId
-      )
-    );
-
-  const collected =
-    payments.reduce(function(total,payment){
-
-      return (
-        total +
-        Number(payment.amount || 0)
-      );
-
-    },0);
-
-  const expected =
-    list.length *
-    getFee(
-      currentSchool(),
-      key
-    );
-
-  const pending =
-    Math.max(
-      0,
-      expected - collected
-    );
-
-  const rate =
-    list.length
-      ?
-        Math.round(
-          paidIds.size /
-          list.length *
-          100
-        )
-      :
-        0;
+  const key = reportMonth || monthKey();
+  const list = activePlayers();
+  const payments = paymentsForMonth(key);
+  const paidIds = new Set(payments.map(p => p.playerId));
+  const collected = payments.reduce((t, p) => t + Number(p.amount || 0), 0);
+  const expected = list.length * getFee(currentSchool(), key);
+  const pending = Math.max(0, expected - collected);
+  const rate = list.length ? Math.round(paidIds.size / list.length * 100) : 0;
 
   const methods = {};
-
-  payments.forEach(function(payment){
-
-    const method =
-      payment.method ||
-      "Sin especificar";
-
-    methods[method] =
-      (
-        methods[method] || 0
-      ) +
-      Number(
-        payment.amount || 0
-      );
-
+  payments.forEach(p => {
+    const m = p.method || "Sin especificar";
+    methods[m] = (methods[m] || 0) + Number(p.amount || 0);
   });
 
   app.innerHTML = `
-
     <div class="card">
-
       <div class="field">
-
-        <label>
-          Reporte mensual
-        </label>
-
-        <input
-          type="month"
-          id="reportMonth"
-          value="${attr(key)}"
-          onchange="changeReportMonth(this.value)"
-        >
-
+        <label>Reporte mensual</label>
+        <input type="month" id="reportMonth" value="${attr(key)}" onchange="changeReportMonth(this.value)">
       </div>
-
     </div>
-
 
     <div class="reportbar section">
-
-      <div class="mini">
-
-        <span class="small">
-          Jugadores
-        </span>
-
-        <b>
-          ${list.length}
-        </b>
-
-      </div>
-
-
-      <div class="mini">
-
-        <span class="small">
-          Pagaron
-        </span>
-
-        <b>
-          ${paidIds.size} (${rate}%)
-        </b>
-
-      </div>
-
-
-      <div class="mini">
-
-        <span class="small">
-          Recaudado
-        </span>
-
-        <b>
-          ${money(collected)}
-        </b>
-
-      </div>
-
-
-      <div class="mini">
-
-        <span class="small">
-          Pendiente
-        </span>
-
-        <b>
-          ${money(pending)}
-        </b>
-
-      </div>
-
+      <div class="mini"><span class="small">Jugadores</span><b>${list.length}</b></div>
+      <div class="mini"><span class="small">Pagaron</span><b>${paidIds.size} (${rate}%)</b></div>
+      <div class="mini"><span class="small">Recaudado</span><b>${money(collected)}</b></div>
+      <div class="mini"><span class="small">Pendiente</span><b>${money(pending)}</b></div>
     </div>
 
-
     <div class="card">
-
-      <h2 style="margin-top:0">
-        📊 Resumen de ${esc(monthName(key))}
-      </h2>
-
-      <p class="small">
-
-        Cuota utilizada:
-        <b>
-          ${money(
-            getFee(
-              currentSchool(),
-              key
-            )
-          )}
-        </b>
-
-      </p>
-
+      <h2 style="margin-top:0">📊 Resumen de ${esc(monthName(key))}</h2>
+      <p class="small">Cuota utilizada: <b>${money(getFee(currentSchool(), key))}</b></p>
 
       <table class="table">
-
         <thead>
-
           <tr>
-
-            <th>
-              Medio de pago
-            </th>
-
-            <th class="right">
-              Importe
-            </th>
-
+            <th>Medio de pago</th>
+            <th class="right">Importe</th>
           </tr>
-
         </thead>
-
         <tbody>
-
-          ${
-            Object.keys(methods).length
-
-            ?
-
-            Object.entries(methods)
-              .map(function(entry){
-
-                const method =
-                  entry[0];
-
-                const value =
-                  entry[1];
-
-                return `
-
-                  <tr>
-
-                    <td>
-                      ${esc(method)}
-                    </td>
-
-                    <td class="right">
-                      ${money(value)}
-                    </td>
-
-                  </tr>
-
-                `;
-
-              })
-              .join("")
-
-            :
-
-            `
-              <tr>
-
-                <td colspan="2">
-                  Sin pagos registrados.
-                </td>
-
-              </tr>
-            `
-          }
-
+          ${Object.keys(methods).length ? Object.entries(methods).map(([method, value]) => `
+            <tr>
+              <td>${esc(method)}</td>
+              <td class="right">${money(value)}</td>
+            </tr>
+          `).join("") : '<tr><td colspan="2">Sin pagos registrados.</td></tr>'}
         </tbody>
-
       </table>
-
 
       <div class="divider"></div>
 
-
       <div class="actions">
-
-        <button
-          type="button"
-          class="btn blue"
-          onclick="exportCSV('${attr(key)}')">
-
-          📥 Exportar CSV
-
-        </button>
-
-        <button
-          type="button"
-          class="btn green"
-          onclick="printReport('${attr(key)}')">
-
-          🖨️ Imprimir reporte
-
-        </button>
-
-        <button
-          type="button"
-          class="btn ghost"
-          onclick="backup()">
-
-          💾 Copia de seguridad
-
-        </button>
-
+        <button type="button" class="btn blue" onclick="exportCSV('${attr(key)}')">📥 Exportar CSV</button>
+        <button type="button" class="btn green" onclick="printReport('${attr(key)}')">🖨️ Imprimir reporte</button>
+        <button type="button" class="btn ghost" onclick="backup()">💾 Copia de seguridad</button>
       </div>
-
     </div>
-
 
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        Detalle de pagos
-      </h2>
-
-      ${
-        payments.length
-
-        ?
-
-        payments.map(function(payment){
-
-          const player =
-            data.players.find(
-              function(item){
-                return item.id === payment.playerId;
-              }
-            );
-
-          return `
-
-            <div class="row">
-
-              <div class="info">
-
-                <b>
-                  ${esc(
-                    player
-                      ? player.name
-                      : "Jugador eliminado"
-                  )}
-                </b>
-
-                <span class="small">
-
-                  ${esc(
-                    payment.method ||
-                    "Sin especificar"
-                  )}
-
-                  ·
-
-                  ${formatDate(payment.date)}
-
-                  ·
-
-                  ${money(payment.amount)}
-
-                </span>
-
-              </div>
-
-              <button
-                type="button"
-                class="btn ghost"
-                style="padding:7px 9px"
-                onclick="receipt('${attr(payment.id)}')">
-
-                🧾
-
-              </button>
-
+      <h2 style="margin-top:0">Detalle de pagos</h2>
+      ${payments.length ? payments.map(p => {
+        const player = data.players.find(item => item.id === p.playerId);
+        return `
+          <div class="row">
+            <div class="info">
+              <b>${esc(player ? player.name : "Jugador eliminado")}</b>
+              <span class="small">${esc(p.method || "Sin especificar")} · ${formatDate(p.date)} · ${money(p.amount)}</span>
             </div>
-
-          `;
-
-        }).join("")
-
-        :
-
-        `
-          <div class="empty">
-            No hay pagos para este mes.
+            <button type="button" class="btn ghost" style="padding:7px 9px" onclick="receipt('${attr(p.id)}')">🧾</button>
           </div>
-        `
-      }
-
+        `;
+      }).join("") : '<div class="empty">No hay pagos para este mes.</div>'}
     </div>
-
   `;
-
 }
 
-
 function changeReportMonth(value){
-
-  reportMonth =
-    value ||
-    monthKey();
-
+  reportMonth = value || monthKey();
   render();
-
 }
 
 
@@ -2189,271 +1122,66 @@ function changeReportMonth(value){
    ========================================================= */
 
 function renderSettings(){
-
-  const current =
-    currentSchool();
-
-  const key =
-    monthKey();
-
-  const history =
-    Object.entries(
-      data.feeHistory[current] || {}
-    )
-    .sort(function(a,b){
-
-      return b[0].localeCompare(
-        a[0]
-      );
-
-    });
+  const current = currentSchool();
+  const key = monthKey();
+  const history = Object.entries(data.feeHistory[current] || {}).sort((a,b) => b[0].localeCompare(a[0]));
 
   app.innerHTML = `
-
     <div class="card">
-
-      <h2 style="margin-top:0">
-        ⚙️ Configuración
-      </h2>
-
-
+      <h2 style="margin-top:0">⚙️ Configuración</h2>
       <div class="field">
-
-        <label>
-          Cuota para ${esc(monthName(key))}
-        </label>
-
-        <input
-          id="fee"
-          type="number"
-          inputmode="decimal"
-          value="${getFee(current,key)}"
-        >
-
+        <label>Cuota para ${esc(monthName(key))}</label>
+        <input id="fee" type="number" inputmode="decimal" value="${getFee(current,key)}">
       </div>
-
-
-      <button
-        type="button"
-        class="btn green"
-        style="width:100%"
-        onclick="saveFee()">
-
-        Guardar cuota del mes
-
-      </button>
-
-
-      <p class="small">
-
-        El valor queda asociado al mes actual.
-        Los meses anteriores conservan su importe.
-
-      </p>
-
+      <button type="button" class="btn green" style="width:100%" onclick="saveFee()">Guardar cuota del mes</button>
+      <p class="small">El valor queda asociado al mes actual. Los meses anteriores conservan su importe.</p>
     </div>
 
-
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        🗓️ Historial de cuotas
-      </h2>
-
-      ${
-        history.length
-
-        ?
-
-        history.map(function(entry){
-
-          const k =
-            entry[0];
-
-          const value =
-            entry[1];
-
-          return `
-
-            <div class="row">
-
-              <div class="info">
-
-                <b>
-                  ${esc(monthName(k))}
-                </b>
-
-                <span class="small">
-                  Cuota registrada
-                </span>
-
-              </div>
-
-              <span class="badge bluebadge">
-                ${money(value)}
-              </span>
-
-            </div>
-
-          `;
-
-        }).join("")
-
-        :
-
-        `
-          <div class="empty">
-            Todavía no hay historial de cuotas.
-          </div>
-        `
-      }
-
+      <h2 style="margin-top:0">🗓️ Historial de cuotas</h2>
+      ${history.length ? history.map(([k, value]) => `
+        <div class="row">
+          <div class="info"><b>${esc(monthName(k))}</b><span class="small">Cuota registrada</span></div>
+          <span class="badge bluebadge">${money(value)}</span>
+        </div>
+      `).join("") : '<div class="empty">Todavía no hay historial de cuotas.</div>'}
     </div>
 
-
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        🏫 Escuelas / sedes
-      </h2>
-
-      ${
-        data.schools.map(function(name,index){
-
-          return `
-
-            <div class="row">
-
-              <div class="info">
-
-                <b>
-                  ${esc(name)}
-                </b>
-
-              </div>
-
-              <button
-                type="button"
-                class="btn"
-                style="padding:8px 10px"
-                onclick="renameSchool(${index})">
-
-                Renombrar
-
-              </button>
-
-            </div>
-
-          `;
-
-        }).join("")
-      }
-
+      <h2 style="margin-top:0">🏫 Escuelas / sedes</h2>
+      ${data.schools.map((name, index) => `
+        <div class="row">
+          <div class="info"><b>${esc(name)}</b></div>
+          <button type="button" class="btn" style="padding:8px 10px" onclick="renameSchool(${index})">Renombrar</button>
+        </div>
+      `).join("")}
 
       <div class="actions">
-
-        <button
-          type="button"
-          class="btn green"
-          onclick="addSchool()">
-
-          ＋ Agregar escuela
-
-        </button>
-
-        <button
-          type="button"
-          class="btn"
-          onclick="backup()">
-
-          💾 Copia
-
-        </button>
-
+        <button type="button" class="btn green" onclick="addSchool()">＋ Agregar escuela</button>
+        <button type="button" class="btn" onclick="backup()">💾 Copia</button>
       </div>
-
     </div>
 
-
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        📤 Exportación
-      </h2>
-
-      <p class="small">
-
-        Podés exportar todos los pagos registrados
-        a CSV o hacer una copia completa en JSON.
-
-      </p>
-
-
+      <h2 style="margin-top:0">📤 Exportación</h2>
+      <p class="small">Podés exportar todos los pagos registrados a CSV o hacer una copia completa en JSON.</p>
       <div class="actions">
-
-        <button
-          type="button"
-          class="btn blue"
-          onclick="exportCSV()">
-
-          📥 Exportar todos los pagos
-
-        </button>
-
-        <button
-          type="button"
-          class="btn ghost"
-          onclick="backup()">
-
-          💾 Backup completo
-
-        </button>
-
+        <button type="button" class="btn blue" onclick="exportCSV()">📥 Exportar todos los pagos</button>
+        <button type="button" class="btn ghost" onclick="backup()">💾 Backup completo</button>
       </div>
-
     </div>
-
 
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        📱 Aplicación
-      </h2>
-
-      <p class="small">
-
-        Esta versión funciona directamente en el navegador.
-        Los datos se guardan localmente en este dispositivo.
-
-      </p>
-
-      <div class="status ok">
-        ✓ Aplicación funcionando en modo local.
-      </div>
-
+      <h2 style="margin-top:0">📱 Aplicación</h2>
+      <p class="small">Esta versión funciona directamente en el navegador. Los datos se guardan localmente en este dispositivo.</p>
+      <div class="status ok">✓ Aplicación funcionando en modo local.</div>
     </div>
-
 
     <div class="card section">
-
-      <h2 style="margin-top:0">
-        🗑️ Datos
-      </h2>
-
-      <button
-        type="button"
-        class="btn danger"
-        style="width:100%"
-        onclick="resetAll()">
-
-        Borrar todos los datos
-
-      </button>
-
+      <h2 style="margin-top:0">🗑️ Datos</h2>
+      <button type="button" class="btn danger" style="width:100%" onclick="resetAll()">Borrar todos los datos</button>
     </div>
-
   `;
-
 }
 
 
@@ -2462,139 +1190,47 @@ function renderSettings(){
    ========================================================= */
 
 function openPlayer(playerId){
+  editId = playerId || null;
+  formType = "player";
+  const player = playerId ? data.players.find(item => item.id === playerId) || {} : {};
 
-  editId =
-    playerId ||
-    null;
-
-  formType =
-    "player";
-
-  const player =
-    playerId
-      ?
-        data.players.find(
-          function(item){
-            return item.id === playerId;
-          }
-        ) || {}
-      :
-        {};
-
-  modalTitle.textContent =
-    playerId
-      ?
-        "Editar jugador"
-      :
-        "Nuevo jugador";
-
+  modalTitle.textContent = playerId ? "Editar jugador" : "Nuevo jugador";
   form.innerHTML = `
-
     <div class="field">
-
-      <label>
-        Nombre y apellido *
-      </label>
-
-      <input
-        id="f_name"
-        value="${attr(player.name || "")}"
-      >
-
+      <label>Nombre y apellido *</label>
+      <input id="f_name" value="${attr(player.name || "")}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Categoría
-      </label>
-
-      <input
-        id="f_cat"
-        placeholder="Ej. Sub 14"
-        value="${attr(player.category || "")}"
-      >
-
+      <label>Categoría</label>
+      <input id="f_cat" placeholder="Ej. Sub 14" value="${attr(player.category || "")}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Fecha de nacimiento
-      </label>
-
-      <input
-        id="f_birth"
-        type="date"
-        value="${attr(player.birth || "")}"
-      >
-
+      <label>Fecha de nacimiento</label>
+      <input id="f_birth" type="date" value="${attr(player.birth || "")}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Padre / madre / tutor
-      </label>
-
-      <input
-        id="f_tutor"
-        value="${attr(player.tutor || "")}"
-      >
-
+      <label>Padre / madre / tutor</label>
+      <input id="f_tutor" value="${attr(player.tutor || "")}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Teléfono
-      </label>
-
-      <input
-        id="f_phone"
-        inputmode="tel"
-        value="${attr(player.phone || "")}"
-      >
-
+      <label>Teléfono</label>
+      <input id="f_phone" inputmode="tel" value="${attr(player.phone || "")}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Estado
-      </label>
-
+      <label>Estado</label>
       <select id="f_active">
-
-        <option
-          value="true"
-          ${player.active !== false ? "selected" : ""}>
-
-          Activo
-
-        </option>
-
-        <option
-          value="false"
-          ${player.active === false ? "selected" : ""}>
-
-          Inactivo
-
-        </option>
-
+        <option value="true" ${player.active !== false ? "selected" : ""}>Activo</option>
+        <option value="false" ${player.active === false ? "selected" : ""}>Inactivo</option>
       </select>
-
     </div>
-
   `;
 
   showModal();
-
 }
 
 
@@ -2602,185 +1238,62 @@ function openPlayer(playerId){
    FORMULARIO PAGO
    ========================================================= */
 
-function openPayment(
-  playerId = null,
-  key = monthKey()
-){
+function openPayment(playerId = null, key = monthKey()){
+  formType = "payment";
+  editId = null;
+  const list = activePlayers();
 
-  formType =
-    "payment";
-
-  editId =
-    null;
-
-  const list =
-    activePlayers();
-
-  modalTitle.textContent =
-    "Registrar cuota";
+  modalTitle.textContent = "Registrar cuota";
 
   if(!list.length){
-
-    form.innerHTML = `
-
-      <div class="empty">
-
-        Primero necesitás agregar
-        al menos un jugador activo.
-
-      </div>
-
-    `;
-
+    form.innerHTML = `<div class="empty">Primero necesitás agregar al menos un jugador activo.</div>`;
     showModal();
-
     return;
-
   }
 
   form.innerHTML = `
-
     <div class="field">
-
-      <label>
-        Jugador *
-      </label>
-
+      <label>Jugador *</label>
       <select id="f_player">
-
-        ${
-          list.map(function(player){
-
-            return `
-
-              <option
-                value="${attr(player.id)}"
-                ${
-                  player.id === playerId
-                    ? "selected"
-                    : ""
-                }>
-
-                ${esc(player.name)}
-
-              </option>
-
-            `;
-
-          }).join("")
-        }
-
+        ${list.map(p => `<option value="${attr(p.id)}" ${p.id === playerId ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
       </select>
-
     </div>
 
-
     <div class="field">
-
-      <label>
-        Mes
-      </label>
-
-      <input
-        id="f_month"
-        type="month"
-        value="${attr(key)}"
-        onchange="updatePaymentAmount()"
-      >
-
+      <label>Mes</label>
+      <input id="f_month" type="month" value="${attr(key)}" onchange="updatePaymentAmount()">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Importe
-      </label>
-
-      <input
-        id="f_amount"
-        type="number"
-        inputmode="decimal"
-        value="${getFee(currentSchool(),key)}"
-      >
-
+      <label>Importe</label>
+      <input id="f_amount" type="number" inputmode="decimal" value="${getFee(currentSchool(),key)}">
     </div>
 
-
     <div class="field">
-
-      <label>
-        Medio de pago
-      </label>
-
+      <label>Medio de pago</label>
       <select id="f_method">
-
-        <option>
-          Efectivo
-        </option>
-
-        <option>
-          Transferencia
-        </option>
-
-        <option>
-          Mercado Pago
-        </option>
-
-        <option>
-          Otro
-        </option>
-
+        <option>Efectivo</option>
+        <option>Transferencia</option>
+        <option>Mercado Pago</option>
+        <option>Otro</option>
       </select>
-
     </div>
-
 
     <div class="field">
-
-      <label>
-        Observación
-      </label>
-
-      <input
-        id="f_note"
-        placeholder="Opcional"
-      >
-
+      <label>Observación</label>
+      <input id="f_note" placeholder="Opcional">
     </div>
-
   `;
 
   showModal();
-
 }
 
-
 function updatePaymentAmount(){
-
-  const month =
-    document.getElementById(
-      "f_month"
-    );
-
-  const amount =
-    document.getElementById(
-      "f_amount"
-    );
-
-  if(
-    month &&
-    amount
-  ){
-
-    amount.value =
-      getFee(
-        currentSchool(),
-        month.value
-      );
-
+  const month = document.getElementById("f_month");
+  const amount = document.getElementById("f_amount");
+  if(month && amount){
+    amount.value = getFee(currentSchool(), month.value);
   }
-
 }
 
 
@@ -2789,124 +1302,83 @@ function updatePaymentAmount(){
    ========================================================= */
 
 function saveForm(){
-
   if(formType === "player"){
-
     savePlayer();
-
     return;
-
   }
-
   if(formType === "payment"){
-
     savePayment();
-
     return;
-
   }
-
 }
 
 
 /* =========================================================
-   GUARDAR JUGADOR
+   GUARDAR JUGADOR (CON SANITIZACIÓN PARA EVITAR ERRORES FECHA)
    ========================================================= */
 
-function savePlayer(){
-
-  const nameInput =
-    document.getElementById(
-      "f_name"
-    );
-
-  const name =
-    nameInput
-      ? nameInput.value.trim()
-      : "";
+async function savePlayer(){
+  const nameInput = document.getElementById("f_name");
+  const name = nameInput ? nameInput.value.trim() : "";
 
   if(!name){
-
-    alert(
-      "Ingresá el nombre del jugador."
-    );
-
+    alert("Ingresá el nombre del jugador.");
     return;
-
   }
 
+  // Sanitizado de valores: Si fecha o cadenas están vacías, se pasa null
+  const rawBirth = document.getElementById("f_birth").value;
+  const cleanBirth = cleanValue(rawBirth);
+
   const player = {
-
-    id:
-      editId ||
-      makeId(),
-
-    name:name,
-
-    category:
-      document
-        .getElementById("f_cat")
-        .value
-        .trim(),
-
-    birth:
-      document
-        .getElementById("f_birth")
-        .value,
-
-    tutor:
-      document
-        .getElementById("f_tutor")
-        .value
-        .trim(),
-
-    phone:
-      document
-        .getElementById("f_phone")
-        .value
-        .trim(),
-
-    school:
-      currentSchool(),
-
-    active:
-      document
-        .getElementById("f_active")
-        .value === "true"
-
+    id: editId || makeId(),
+    name: name,
+    category: cleanValue(document.getElementById("f_cat").value.trim()),
+    birth: cleanBirth, // Evita enviar "" a columnas DATE
+    tutor: cleanValue(document.getElementById("f_tutor").value.trim()),
+    phone: cleanValue(document.getElementById("f_phone").value.trim()),
+    school: currentSchool(),
+    active: document.getElementById("f_active").value === "true"
   };
 
+  // 1. Guardar en Supabase si el cliente está activo
+  if (supabaseClient) {
+    try {
+      const payload = {
+        nombre: player.name,
+        categoria: player.category,
+        fecha_nacimiento: player.birth, // NULL si está vacío
+        tutor: player.tutor,
+        telefono: player.phone,
+        escuela: player.school,
+        activo: player.active
+      };
 
-  if(editId){
+      const { error } = await supabaseClient
+        .from('jugadores')
+        .upsert([payload]);
 
-    const index =
-      data.players.findIndex(
-        function(item){
-          return item.id === editId;
-        }
-      );
-
-    if(index >= 0){
-
-      data.players[index] =
-        player;
-
+      if (error) {
+        console.error("Error al guardar en Supabase:", error.message);
+      }
+    } catch(err) {
+      console.error("Error al sincronizar con Supabase:", err);
     }
+  }
 
+  // 2. Guardado Local
+  if(editId){
+    const index = data.players.findIndex(item => item.id === editId);
+    if(index >= 0){
+      data.players[index] = player;
+    }
   }else{
-
-    data.players.push(
-      player
-    );
-
+    data.players.push(player);
   }
 
   persist();
-
   closeModal();
-
   render();
-
 }
 
 
@@ -2915,94 +1387,37 @@ function savePlayer(){
    ========================================================= */
 
 function savePayment(){
+  const playerId = document.getElementById("f_player").value;
+  const key = document.getElementById("f_month").value;
+  const amount = Number(document.getElementById("f_amount").value);
+  const method = document.getElementById("f_method").value;
+  const note = cleanValue(document.getElementById("f_note").value.trim());
 
-  const playerId =
-    document
-      .getElementById("f_player")
-      .value;
-
-  const key =
-    document
-      .getElementById("f_month")
-      .value;
-
-  const amount =
-    Number(
-      document
-        .getElementById("f_amount")
-        .value
-    );
-
-  const method =
-    document
-      .getElementById("f_method")
-      .value;
-
-  const note =
-    document
-      .getElementById("f_note")
-      .value
-      .trim();
-
-  if(
-    !playerId ||
-    !key ||
-    !amount ||
-    amount <= 0
-  ){
-
-    alert(
-      "Completá jugador, mes e importe."
-    );
-
+  if(!playerId || !key || !amount || amount <= 0){
+    alert("Completá jugador, mes e importe.");
     return;
-
   }
 
-  const already =
-    findPayment(
-      playerId,
-      key
-    );
-
-  if(already){
-
-    alert(
-      "Ese jugador ya tiene un pago registrado para ese mes."
-    );
-
+  if(findPayment(playerId, key)){
+    alert("Ese jugador ya tiene un pago registrado para ese mes.");
     return;
-
   }
 
   data.payments.push({
-
-    id:makeId(),
-
-    playerId:playerId,
-
-    school:currentSchool(),
-
-    month:monthName(key),
-
-    monthKey:key,
-
-    amount:amount,
-
-    method:method,
-
-    note:note,
-
-    date:new Date().toISOString()
-
+    id: makeId(),
+    playerId: playerId,
+    school: currentSchool(),
+    month: monthName(key),
+    monthKey: key,
+    amount: amount,
+    method: method,
+    note: note,
+    date: new Date().toISOString()
   });
 
   persist();
-
   closeModal();
-
   render();
-
 }
 
 
@@ -3010,58 +1425,28 @@ function savePayment(){
    PAGO RÁPIDO
    ========================================================= */
 
-function quickPay(
-  playerId,
-  key = monthKey()
-){
-
-  if(
-    findPayment(
-      playerId,
-      key
-    )
-  ){
-
-    alert(
-      "Este jugador ya figura como pagado en ese mes."
-    );
-
+function quickPay(playerId, key = monthKey()){
+  if(findPayment(playerId, key)){
+    alert("Este jugador ya figura como pagado en ese mes.");
     return;
-
   }
 
-  const amount =
-    getFee(
-      currentSchool(),
-      key
-    );
+  const amount = getFee(currentSchool(), key);
 
   data.payments.push({
-
-    id:makeId(),
-
-    playerId:playerId,
-
-    school:currentSchool(),
-
-    month:monthName(key),
-
-    monthKey:key,
-
-    amount:amount,
-
-    method:"No especificado",
-
-    note:"Pago rápido",
-
-    date:new Date().toISOString()
-
+    id: makeId(),
+    playerId: playerId,
+    school: currentSchool(),
+    month: monthName(key),
+    monthKey: key,
+    amount: amount,
+    method: "No especificado",
+    note: "Pago rápido",
+    date: new Date().toISOString()
   });
 
   persist();
-
   render();
-
 }
 
 
@@ -3070,45 +1455,19 @@ function quickPay(
    ========================================================= */
 
 function saveFee(){
+  const input = document.getElementById("fee");
+  if(!input) return;
 
-  const input =
-    document.getElementById(
-      "fee"
-    );
-
-  if(!input){
+  const value = Number(input.value);
+  if(!Number.isFinite(value) || value <= 0){
+    alert("Ingresá una cuota válida.");
     return;
   }
 
-  const value =
-    Number(input.value);
-
-  if(
-    !Number.isFinite(value) ||
-    value <= 0
-  ){
-
-    alert(
-      "Ingresá una cuota válida."
-    );
-
-    return;
-
-  }
-
-  const key =
-    monthKey();
-
-  setFeeForMonth(
-    currentSchool(),
-    key,
-    value
-  );
-
+  const key = monthKey();
+  setFeeForMonth(currentSchool(), key, value);
   persist();
-
   render();
-
 }
 
 
@@ -3117,160 +1476,60 @@ function saveFee(){
    ========================================================= */
 
 function addSchool(){
+  const value = prompt("Nombre de la nueva escuela / sede:");
+  if(!value || !value.trim()) return;
 
-  const value =
-    prompt(
-      "Nombre de la nueva escuela / sede:"
-    );
-
-  if(
-    !value ||
-    !value.trim()
-  ){
+  const name = value.trim();
+  if(data.schools.includes(name)){
+    alert("Esa escuela ya existe.");
     return;
   }
 
-  const name =
-    value.trim();
-
-  if(
-    data.schools.includes(name)
-  ){
-
-    alert(
-      "Esa escuela ya existe."
-    );
-
-    return;
-
-  }
-
-  data.schools.push(
-    name
-  );
-
+  data.schools.push(name);
   persist();
-
   populateSchools();
-
-  schoolSelect.value =
-    String(
-      data.schools.length - 1
-    );
-
+  schoolSelect.value = String(data.schools.length - 1);
   render();
-
 }
 
-
 function renameSchool(index){
+  if(index < 0 || index >= data.schools.length) return;
 
-  if(
-    index < 0 ||
-    index >= data.schools.length
-  ){
+  const oldName = data.schools[index];
+  const value = prompt("Nuevo nombre:", oldName);
+  if(!value || !value.trim()) return;
+
+  const newName = value.trim();
+  if(newName === oldName) return;
+
+  if(data.schools.includes(newName)){
+    alert("Ya existe una escuela con ese nombre.");
     return;
   }
 
-  const oldName =
-    data.schools[index];
+  data.schools[index] = newName;
 
-  const value =
-    prompt(
-      "Nuevo nombre:",
-      oldName
-    );
+  data.players.forEach(p => {
+    if(p.school === oldName) p.school = newName;
+  });
 
-  if(
-    !value ||
-    !value.trim()
-  ){
-    return;
-  }
+  data.payments.forEach(p => {
+    if(p.school === oldName) p.school = newName;
+  });
 
-  const newName =
-    value.trim();
-
-  if(
-    newName === oldName
-  ){
-    return;
-  }
-
-  if(
-    data.schools.includes(newName)
-  ){
-
-    alert(
-      "Ya existe una escuela con ese nombre."
-    );
-
-    return;
-
-  }
-
-  data.schools[index] =
-    newName;
-
-
-  data.players.forEach(
-    function(player){
-
-      if(player.school === oldName){
-
-        player.school =
-          newName;
-
-      }
-
-    }
-  );
-
-
-  data.payments.forEach(
-    function(payment){
-
-      if(payment.school === oldName){
-
-        payment.school =
-          newName;
-
-      }
-
-    }
-  );
-
-
-  if(
-    data.fees[oldName] !== undefined
-  ){
-
-    data.fees[newName] =
-      data.fees[oldName];
-
+  if(data.fees[oldName] !== undefined){
+    data.fees[newName] = data.fees[oldName];
     delete data.fees[oldName];
-
   }
 
-
-  if(
-    data.feeHistory[oldName]
-  ){
-
-    data.feeHistory[newName] =
-      data.feeHistory[oldName];
-
+  if(data.feeHistory[oldName]){
+    data.feeHistory[newName] = data.feeHistory[oldName];
     delete data.feeHistory[oldName];
-
   }
-
 
   persist();
-
   populateSchools();
-
   render();
-
 }
 
 
@@ -3279,26 +1538,13 @@ function renameSchool(index){
    ========================================================= */
 
 function showModal(){
-
-  modal.classList.add(
-    "show"
-  );
-
+  modal.classList.add("show");
 }
 
-
 function closeModal(){
-
-  modal.classList.remove(
-    "show"
-  );
-
-  editId =
-    null;
-
-  formType =
-    null;
-
+  modal.classList.remove("show");
+  editId = null;
+  formType = null;
 }
 
 
@@ -3307,57 +1553,16 @@ function closeModal(){
    ========================================================= */
 
 function backup(){
-
-  const json =
-    JSON.stringify(
-      data,
-      null,
-      2
-    );
-
-  const blob =
-    new Blob(
-      [json],
-      {
-        type:"application/json"
-      }
-    );
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-  const link =
-    document.createElement(
-      "a"
-    );
-
-  link.href =
-    url;
-
-  link.download =
-    "mis-escuelas-backup.json";
-
-  document.body.appendChild(
-    link
-  );
-
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "mis-escuelas-backup.json";
+  document.body.appendChild(link);
   link.click();
-
   link.remove();
-
-  setTimeout(
-    function(){
-
-      URL.revokeObjectURL(
-        url
-      );
-
-    },
-    1000
-  );
-
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 
@@ -3365,166 +1570,42 @@ function backup(){
    EXPORTAR CSV
    ========================================================= */
 
-function exportCSV(
-  key = null
-){
-
-  const rows =
-    data.payments.filter(
-      function(payment){
-
-        return (
-          payment.school ===
-          currentSchool()
-        )
-        &&
-        (
-          !key ||
-          payment.monthKey === key
-        );
-
-      }
-    );
-
-
-  const header = [
-
-    "Fecha",
-    "Mes",
-    "Escuela",
-    "Jugador",
-    "Categoría",
-    "Importe",
-    "Medio de pago",
-    "Observación"
-
-  ];
-
-
-  const output = [
-    header
-  ];
-
-
-  rows.forEach(
-    function(payment){
-
-      const player =
-        data.players.find(
-          function(item){
-            return item.id === payment.playerId;
-          }
-        ) || {};
-
-
-      output.push([
-
-        formatDate(
-          payment.date
-        ),
-
-        payment.month,
-
-        payment.school,
-
-        player.name || "",
-
-        player.category || "",
-
-        payment.amount,
-
-        payment.method || "",
-
-        payment.note || ""
-
-      ]);
-
-    }
+function exportCSV(key = null){
+  const rows = data.payments.filter(payment =>
+    payment.school === currentSchool() && (!key || payment.monthKey === key)
   );
 
+  const header = ["Fecha", "Mes", "Escuela", "Jugador", "Categoría", "Importe", "Medio de pago", "Observación"];
+  const output = [header];
 
-  const csv =
-    "\ufeff" +
-    output
-      .map(function(row){
+  rows.forEach(payment => {
+    const player = data.players.find(item => item.id === payment.playerId) || {};
+    output.push([
+      formatDate(payment.date),
+      payment.month,
+      payment.school,
+      player.name || "",
+      player.category || "",
+      payment.amount,
+      payment.method || "",
+      payment.note || ""
+    ]);
+  });
 
-        return row
-          .map(function(value){
+  const csv = "\ufeff" + output.map(row =>
+    row.map(value => '"' + String(value ?? "").replace(/"/g, '""') + '"').join(";")
+  ).join("\n");
 
-            return (
-              '"' +
-              String(
-                value ?? ""
-              ).replace(
-                /"/g,
-                '""'
-              ) +
-              '"'
-            );
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = key ? `mis-escuelas-pagos-${key}.csv` : "mis-escuelas-todos-los-pagos.csv";
 
-          })
-          .join(";");
-
-      })
-      .join("\n");
-
-
-  const blob =
-    new Blob(
-      [csv],
-      {
-        type:
-          "text/csv;charset=utf-8"
-      }
-    );
-
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-
-  const link =
-    document.createElement(
-      "a"
-    );
-
-
-  link.href =
-    url;
-
-
-  link.download =
-    key
-      ?
-        "mis-escuelas-pagos-" +
-        key +
-        ".csv"
-      :
-        "mis-escuelas-todos-los-pagos.csv";
-
-
-  document.body.appendChild(
-    link
-  );
-
+  document.body.appendChild(link);
   link.click();
-
   link.remove();
-
-
-  setTimeout(
-    function(){
-
-      URL.revokeObjectURL(
-        url
-      );
-
-    },
-    1000
-  );
-
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 
@@ -3533,234 +1614,59 @@ function exportCSV(
    ========================================================= */
 
 function receipt(paymentId){
-
-  const payment =
-    data.payments.find(
-      function(item){
-
-        return item.id === paymentId;
-
-      }
-    );
-
-
+  const payment = data.payments.find(item => item.id === paymentId);
   if(!payment){
-
-    alert(
-      "No se encontró el pago."
-    );
-
+    alert("No se encontró el pago.");
     return;
-
   }
 
-
-  const player =
-    data.players.find(
-      function(item){
-
-        return item.id === payment.playerId;
-
-      }
-    ) || {};
-
+  const player = data.players.find(item => item.id === payment.playerId) || {};
 
   const html = `
-
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
 <meta charset="UTF-8">
-
-<title>
-Comprobante - Mis Escuelas
-</title>
-
+<title>Comprobante - Mis Escuelas</title>
 <style>
-
-body{
-  font-family:Arial,sans-serif;
-  padding:30px;
-  color:#111827;
-  max-width:520px;
-  margin:auto;
-}
-
-.box{
-  border:1px solid #ddd;
-  border-radius:14px;
-  padding:24px;
-}
-
-h1{
-  margin:0 0 5px;
-}
-
-h2{
-  margin-top:25px;
-  border-bottom:1px solid #ddd;
-  padding-bottom:8px;
-}
-
-.row{
-  display:flex;
-  justify-content:space-between;
-  gap:20px;
-  padding:9px 0;
-  border-bottom:1px solid #eee;
-}
-
-.total{
-  font-size:24px;
-  font-weight:bold;
-  margin-top:20px;
-}
-
-.muted{
-  color:#666;
-  font-size:12px;
-}
-
-button{
-  margin-top:20px;
-  padding:10px 16px;
-  border:0;
-  border-radius:8px;
-  background:#111827;
-  color:white;
-}
-
-@media print{
-
-  button{
-    display:none;
-  }
-
-  body{
-    padding:0;
-  }
-
-}
-
+body{ font-family:Arial,sans-serif; padding:30px; color:#111827; max-width:520px; margin:auto; }
+.box{ border:1px solid #ddd; border-radius:14px; padding:24px; }
+h1{ margin:0 0 5px; }
+h2{ margin-top:25px; border-bottom:1px solid #ddd; padding-bottom:8px; }
+.row{ display:flex; justify-content:space-between; gap:20px; padding:9px 0; border-bottom:1px solid #eee; }
+.total{ font-size:24px; font-weight:bold; margin-top:20px; }
+.muted{ color:#666; font-size:12px; }
+button{ margin-top:20px; padding:10px 16px; border:0; border-radius:8px; background:#111827; color:white; }
+@media print{ button{ display:none; } body{ padding:0; } }
 </style>
-
 </head>
-
 <body>
-
 <div class="box">
-
-<h1>
-⚽ Mis Escuelas
-</h1>
-
-<div class="muted">
-Comprobante de pago
+  <h1>⚽ Mis Escuelas</h1>
+  <div class="muted">Comprobante de pago</div>
+  <h2>${esc(payment.school)}</h2>
+  <div class="row"><span>Jugador</span><b>${esc(player.name || "")}</b></div>
+  <div class="row"><span>Categoría</span><span>${esc(player.category || "")}</span></div>
+  <div class="row"><span>Período</span><span>${esc(payment.month || payment.monthKey)}</span></div>
+  <div class="row"><span>Medio de pago</span><span>${esc(payment.method || "")}</span></div>
+  <div class="row"><span>Fecha</span><span>${esc(formatDate(payment.date))}</span></div>
+  ${payment.note ? `<div class="row"><span>Observación</span><span>${esc(payment.note)}</span></div>` : ""}
+  <div class="total">Total: ${money(payment.amount)}</div>
+  <button onclick="window.print()">Imprimir / Guardar PDF</button>
 </div>
-
-<h2>
-${esc(payment.school)}
-</h2>
-
-<div class="row">
-<span>Jugador</span>
-<b>
-${esc(player.name || "")}
-</b>
-</div>
-
-<div class="row">
-<span>Categoría</span>
-<span>
-${esc(player.category || "")}
-</span>
-</div>
-
-<div class="row">
-<span>Período</span>
-<span>
-${esc(payment.month || payment.monthKey)}
-</span>
-</div>
-
-<div class="row">
-<span>Medio de pago</span>
-<span>
-${esc(payment.method || "")}
-</span>
-</div>
-
-<div class="row">
-<span>Fecha</span>
-<span>
-${esc(formatDate(payment.date))}
-</span>
-</div>
-
-${
-  payment.note
-  ?
-  `
-    <div class="row">
-      <span>Observación</span>
-      <span>
-        ${esc(payment.note)}
-      </span>
-    </div>
-  `
-  :
-  ""
-}
-
-<div class="total">
-
-Total:
-${money(payment.amount)}
-
-</div>
-
-<button onclick="window.print()">
-Imprimir / Guardar PDF
-</button>
-
-</div>
-
 </body>
-
 </html>
-
 `;
 
-
-  const windowRef =
-    window.open(
-      "",
-      "_blank"
-    );
-
-
+  const windowRef = window.open("", "_blank");
   if(!windowRef){
-
-    alert(
-      "El navegador bloqueó la ventana. Permití ventanas emergentes."
-    );
-
+    alert("El navegador bloqueó la ventana. Permití ventanas emergentes.");
     return;
-
   }
 
-
   windowRef.document.open();
-
-  windowRef.document.write(
-    html
-  );
-
+  windowRef.document.write(html);
   windowRef.document.close();
-
 }
 
 
@@ -3769,277 +1675,81 @@ Imprimir / Guardar PDF
    ========================================================= */
 
 function printReport(key){
+  const payments = paymentsForMonth(key);
+  const players = activePlayers();
+  const collected = payments.reduce((total, p) => total + Number(p.amount || 0), 0);
+  const expected = players.length * getFee(currentSchool(), key);
+  const paid = new Set(payments.map(p => p.playerId)).size;
 
-  const payments =
-    paymentsForMonth(key);
+  const rows = payments.map(payment => {
+    const player = data.players.find(item => item.id === payment.playerId) || {};
+    return `
+      <tr>
+        <td>${esc(player.name || "")}</td>
+        <td>${esc(player.category || "")}</td>
+        <td>${esc(payment.method || "")}</td>
+        <td>${esc(formatDate(payment.date))}</td>
+        <td>${money(payment.amount)}</td>
+      </tr>
+    `;
+  }).join("");
 
-  const players =
-    activePlayers();
-
-  const collected =
-    payments.reduce(
-      function(total,payment){
-
-        return (
-          total +
-          Number(payment.amount || 0)
-        );
-
-      },
-      0
-    );
-
-
-  const expected =
-    players.length *
-    getFee(
-      currentSchool(),
-      key
-    );
-
-
-  const paid =
-    new Set(
-      payments.map(
-        function(payment){
-          return payment.playerId;
-        }
-      )
-    ).size;
-
-
-  const rows =
-    payments.map(
-      function(payment){
-
-        const player =
-          data.players.find(
-            function(item){
-
-              return item.id ===
-                payment.playerId;
-
-            }
-          ) || {};
-
-
-        return `
-
-          <tr>
-
-            <td>
-              ${esc(player.name || "")}
-            </td>
-
-            <td>
-              ${esc(player.category || "")}
-            </td>
-
-            <td>
-              ${esc(payment.method || "")}
-            </td>
-
-            <td>
-              ${esc(formatDate(payment.date))}
-            </td>
-
-            <td>
-              ${money(payment.amount)}
-            </td>
-
-          </tr>
-
-        `;
-
-      }
-    ).join("");
-
-
-  const reportWindow =
-    window.open(
-      "",
-      "_blank"
-    );
-
-
+  const reportWindow = window.open("", "_blank");
   if(!reportWindow){
-
-    alert(
-      "Permití ventanas emergentes para imprimir el reporte."
-    );
-
+    alert("Permití ventanas emergentes para imprimir el reporte.");
     return;
-
   }
 
-
   reportWindow.document.write(`
-
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
 <meta charset="UTF-8">
-
-<title>
-Reporte Mis Escuelas
-</title>
-
+<title>Reporte Mis Escuelas</title>
 <style>
-
-body{
-  font-family:Arial,sans-serif;
-  padding:30px;
-}
-
-h1{
-  margin-bottom:5px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
-}
-
-th,
-td{
-  border-bottom:1px solid #ddd;
-  padding:8px;
-  text-align:left;
-}
-
-.cards{
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-  margin:20px 0;
-}
-
-.card{
-  border:1px solid #ddd;
-  padding:12px;
-  border-radius:8px;
-  min-width:140px;
-}
-
+body{ font-family:Arial,sans-serif; padding:30px; }
+h1{ margin-bottom:5px; }
+table{ width:100%; border-collapse:collapse; margin-top:20px; }
+th, td{ border-bottom:1px solid #ddd; padding:8px; text-align:left; }
+.cards{ display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
+.card{ border:1px solid #ddd; padding:12px; border-radius:8px; min-width:140px; }
 </style>
-
 </head>
-
 <body>
-
-<h1>
-⚽ Mis Escuelas
-</h1>
-
-<h2>
-${esc(currentSchool())}
-</h2>
-
-<h3>
-${esc(monthName(key))}
-</h3>
+<h1>⚽ Mis Escuelas</h1>
+<h2>${esc(currentSchool())}</h2>
+<h3>${esc(monthName(key))}</h3>
 
 <div class="cards">
-
-<div class="card">
-Jugadores:
-<b>${players.length}</b>
-</div>
-
-<div class="card">
-Pagaron:
-<b>${paid}</b>
-</div>
-
-<div class="card">
-Recaudado:
-<b>${money(collected)}</b>
-</div>
-
-<div class="card">
-Pendiente:
-<b>
-${money(
-  Math.max(
-    0,
-    expected - collected
-  )
-)}
-</b>
-</div>
-
+  <div class="card">Jugadores: <b>${players.length}</b></div>
+  <div class="card">Pagaron: <b>${paid}</b></div>
+  <div class="card">Recaudado: <b>${money(collected)}</b></div>
+  <div class="card">Pendiente: <b>${money(Math.max(0, expected - collected))}</b></div>
 </div>
 
 <table>
-
-<thead>
-
-<tr>
-
-<th>
-Jugador
-</th>
-
-<th>
-Categoría
-</th>
-
-<th>
-Medio
-</th>
-
-<th>
-Fecha
-</th>
-
-<th>
-Importe
-</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-${
-  rows ||
-  `
+  <thead>
     <tr>
-      <td colspan="5">
-        Sin pagos.
-      </td>
+      <th>Jugador</th>
+      <th>Categoría</th>
+      <th>Medio</th>
+      <th>Fecha</th>
+      <th>Importe</th>
     </tr>
-  `
-}
-
-</tbody>
-
+  </thead>
+  <tbody>
+    ${rows || '<tr><td colspan="5">Sin pagos.</td></tr>'}
+  </tbody>
 </table>
 
 <script>
-
-window.onload = function(){
-
-  window.print();
-
-};
-
+window.onload = function(){ window.print(); };
 <\/script>
-
 </body>
-
 </html>
-
 `);
 
-
   reportWindow.document.close();
-
 }
 
 
@@ -4048,33 +1758,16 @@ window.onload = function(){
    ========================================================= */
 
 function resetAll(){
-
-  const confirmed =
-    confirm(
-      "¿Seguro que querés borrar todos los datos de Mis Escuelas en este dispositivo?"
-    );
-
-
-  if(!confirmed){
-    return;
-  }
-
+  const confirmed = confirm("¿Seguro que querés borrar todos los datos de Mis Escuelas en este dispositivo?");
+  if(!confirmed) return;
 
   try{
-
-    localStorage.removeItem(
-      STORAGE_KEY
-    );
-
+    localStorage.removeItem(STORAGE_KEY);
   }catch(error){
-
     console.error(error);
-
   }
 
-
   location.reload();
-
 }
 
 
@@ -4083,36 +1776,19 @@ function resetAll(){
    ========================================================= */
 
 function init(){
-
   loadData();
-
   populateSchools();
 
-  schoolSelect.addEventListener(
-    "change",
-    function(){
-
-      reportMonth =
-        monthKey();
-
-      render();
-
-    }
-  );
+  schoolSelect.addEventListener("change", function(){
+    reportMonth = monthKey();
+    render();
+  });
 
   navigate("home");
-
 }
-
-
-/* =========================================================
-   ARRANCAR
-   ========================================================= */
 
 init();
 
 </script>
-
 </body>
 </html>
-```
