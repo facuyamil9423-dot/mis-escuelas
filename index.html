@@ -1,145 +1,4118 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guardar Jugador - Supabase</title>
-  <!-- Carga del SDK oficial de Supabase desde CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 500px;
-      margin: 40px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="date"] {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #28a745;
-      color: white;
-      padding: 10px 15px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 16px;
-    }
-    button:disabled {
-      background-color: #94d3a2;
-    }
-    #mensaje {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 4px;
-      display: none;
-    }
-    .exito { background-color: #d4edda; color: #155724; }
-    .error { background-color: #f8d7da; color: #721c24; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<title>Mis Escuelas ⚽</title>
+
+<style>
+:root{
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --green:#15803d;
+  --red:#dc2626;
+  --blue:#2563eb;
+  --line:#e5e7eb;
+  --amber:#b45309;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  padding-bottom:90px;
+}
+
+header{
+  background:#111827;
+  color:white;
+  padding:22px 18px 18px;
+  border-radius:0 0 24px 24px;
+}
+
+header h1{
+  margin:0;
+  font-size:26px;
+}
+
+header p{
+  margin:5px 0 0;
+  color:#cbd5e1;
+  font-size:14px;
+}
+
+main{
+  width:100%;
+  max-width:760px;
+  margin:auto;
+  padding:15px;
+}
+
+.selector,
+.card{
+  background:var(--card);
+  border-radius:16px;
+  box-shadow:0 2px 10px #0000000b;
+}
+
+.selector{
+  padding:12px;
+  margin-bottom:14px;
+}
+
+select,
+input{
+  width:100%;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:white;
+  font:inherit;
+}
+
+button{
+  font-family:inherit;
+}
+
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.card{
+  padding:15px;
+}
+
+.metric{
+  font-size:23px;
+  font-weight:800;
+  margin-top:4px;
+}
+
+.label{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin:14px 0;
+}
+
+.btn{
+  border:0;
+  border-radius:11px;
+  padding:12px;
+  font:inherit;
+  font-weight:750;
+  background:#111827;
+  color:white;
+  cursor:pointer;
+  min-height:44px;
+}
+
+.btn:active{
+  transform:scale(.98);
+}
+
+.green{
+  background:var(--green);
+}
+
+.blue{
+  background:var(--blue);
+}
+
+.danger{
+  background:#b91c1c;
+}
+
+.amber{
+  background:var(--amber);
+}
+
+.ghost{
+  background:white;
+  color:#111827;
+  border:1px solid var(--line);
+}
+
+.section{
+  margin-top:14px;
+}
+
+.section h2{
+  font-size:18px;
+  margin:0 0 10px;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.row:last-child{
+  border-bottom:0;
+}
+
+.row .info{
+  min-width:0;
+  flex:1;
+}
+
+.row b{
+  display:block;
+}
+
+.badge{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.paid{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.pending{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.bluebadge{
+  background:#dbeafe;
+  color:#1e40af;
+}
+
+.warn{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+.search{
+  margin-bottom:10px;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:24px 8px;
+}
+
+.notice{
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#1e40af;
+  border-radius:14px;
+  padding:12px;
+  font-size:13px;
+  margin-top:12px;
+}
+
+.field{
+  margin:10px 0;
+}
+
+.field label{
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  margin-bottom:5px;
+}
+
+.two{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.divider{
+  height:1px;
+  background:var(--line);
+  margin:14px 0;
+}
+
+.reportbar{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-bottom:12px;
+}
+
+.mini{
+  background:#f9fafb;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+
+.mini b{
+  display:block;
+  font-size:16px;
+  margin-top:2px;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+.table th,
+.table td{
+  padding:9px 6px;
+  border-bottom:1px solid var(--line);
+  text-align:left;
+}
+
+.table th{
+  color:var(--muted);
+  font-size:11px;
+  text-transform:uppercase;
+}
+
+.right{
+  text-align:right!important;
+}
+
+.modal{
+  display:none;
+  position:fixed;
+  z-index:100;
+  inset:0;
+  background:#0008;
+  align-items:flex-end;
+}
+
+.modal.show{
+  display:flex;
+}
+
+.sheet{
+  background:white;
+  width:100%;
+  max-width:760px;
+  margin:auto;
+  border-radius:22px 22px 0 0;
+  padding:20px;
+  max-height:92vh;
+  overflow:auto;
+}
+
+.sheet h2{
+  margin-top:0;
+}
+
+nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:white;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-around;
+  padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  z-index:90;
+}
+
+nav button{
+  border:0;
+  background:none;
+  color:#6b7280;
+  font:inherit;
+  font-size:11px;
+  cursor:pointer;
+  padding:4px 7px;
+}
+
+nav button.active{
+  color:#111827;
+  font-weight:800;
+}
+
+nav span{
+  display:block;
+  font-size:20px;
+  margin-bottom:2px;
+}
+
+.status{
+  margin-top:10px;
+  padding:10px;
+  border-radius:10px;
+  font-size:13px;
+}
+
+.status.ok{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.status.error{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+@media(min-width:600px){
+
+  .modal{
+    align-items:center;
+    padding:20px;
+  }
+
+  .sheet{
+    border-radius:20px;
+  }
+
+  .actions{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .reportbar{
+    grid-template-columns:repeat(4,1fr);
+  }
+}
+
+@media(max-width:480px){
+
+  .grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .two{
+    grid-template-columns:1fr;
+  }
+
+  .actions{
+    grid-template-columns:1fr 1fr;
+  }
+}
+</style>
 </head>
+
 <body>
 
-  <h2>Registro de Jugador</h2>
+<header>
+  <h1>⚽ Mis Escuelas</h1>
+  <p>Gestión de jugadores, cuotas, historial y comprobantes</p>
+</header>
 
-  <form id="jugadorForm">
-    <div class="form-group">
-      <label for="nombre">Nombre:</label>
-      <input type="text" id="nombre" name="nombre" required>
+<main>
+
+  <div class="selector">
+    <div class="small">ESCUELA / SEDE</div>
+    <select id="school"></select>
+  </div>
+
+  <div id="app"></div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+
+  <div class="sheet">
+
+    <h2 id="modalTitle"></h2>
+
+    <div id="form"></div>
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="saveForm()">
+        Guardar
+      </button>
+
+      <button
+        type="button"
+        class="btn ghost"
+        onclick="closeModal()">
+        Cancelar
+      </button>
+
     </div>
 
-    <div class="form-group">
-      <label for="apellido">Apellido:</label>
-      <input type="text" id="apellido" name="apellido">
-    </div>
+  </div>
 
-    <div class="form-group">
-      <label for="fecha_nacimiento">Fecha de Nacimiento (Opcional):</label>
-      <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
-    </div>
+</div>
 
-    <button type="submit" id="btnGuardar">Guardar Jugador</button>
-  </form>
+<!-- NAVEGACIÓN -->
+<nav>
 
-  <div id="mensaje"></div>
+  <button
+    type="button"
+    data-view="home"
+    class="active"
+    onclick="navigate('home')">
 
-  <script>
-    // 1. Configuración de Supabase (Reemplaza con tus credenciales)
-    const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
-    const SUPABASE_ANON_KEY = 'tu-anon-key-aqui';
+    <span>🏠</span>
+    Inicio
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  </button>
 
-    // 2. Función para sanitizar campos: convierte cadenas vacías ("") a null
-    function sanitizarDatos(datos) {
-      const datosLimpios = {};
-      for (const key in datos) {
-        if (typeof datos[key] === 'string' && datos[key].trim() === '') {
-          datosLimpios[key] = null;
-        } else {
-          datosLimpios[key] = datos[key];
-        }
-      }
-      return datosLimpios;
+  <button
+    type="button"
+    data-view="players"
+    onclick="navigate('players')">
+
+    <span>👥</span>
+    Jugadores
+
+  </button>
+
+  <button
+    type="button"
+    data-view="payments"
+    onclick="navigate('payments')">
+
+    <span>💰</span>
+    Cuotas
+
+  </button>
+
+  <button
+    type="button"
+    data-view="reports"
+    onclick="navigate('reports')">
+
+    <span>📊</span>
+    Reportes
+
+  </button>
+
+  <button
+    type="button"
+    data-view="settings"
+    onclick="navigate('settings')">
+
+    <span>⚙️</span>
+    Opciones
+
+  </button>
+
+</nav>
+
+<script>
+
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
+
+const STORAGE_KEY = "misEscuelas_v4";
+
+const DEFAULT_SCHOOLS = [
+  "Semillitas",
+  "La Cantera",
+  "Nueva Escuela"
+];
+
+
+/* =========================================================
+   ESTADO DE LA APLICACIÓN
+   ========================================================= */
+
+let data = null;
+
+let currentView = "home";
+
+let editId = null;
+
+let formType = null;
+
+let reportMonth = monthKey();
+
+let showInactive = false;
+
+
+/* =========================================================
+   ELEMENTOS
+   ========================================================= */
+
+const app =
+  document.getElementById("app");
+
+const schoolSelect =
+  document.getElementById("school");
+
+const modal =
+  document.getElementById("modal");
+
+const modalTitle =
+  document.getElementById("modalTitle");
+
+const form =
+  document.getElementById("form");
+
+
+/* =========================================================
+   FUNCIONES GENERALES
+   ========================================================= */
+
+function money(value){
+
+  return new Intl.NumberFormat(
+    "es-AR",
+    {
+      style:"currency",
+      currency:"ARS",
+      maximumFractionDigits:0
+    }
+  ).format(Number(value) || 0);
+
+}
+
+
+function esc(value){
+
+  return String(value ?? "")
+    .replace(/[&<>"']/g,function(char){
+
+      const map = {
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      };
+
+      return map[char];
+
+    });
+
+}
+
+
+function attr(value){
+
+  return esc(value);
+
+}
+
+
+function makeId(){
+
+  return (
+    "id_" +
+    Date.now() +
+    "_" +
+    Math.random()
+      .toString(36)
+      .substring(2,10)
+  );
+
+}
+
+
+function monthKey(date = new Date()){
+
+  return (
+    date.getFullYear() +
+    "-" +
+    String(date.getMonth()+1)
+      .padStart(2,"0")
+  );
+
+}
+
+
+function monthName(key = monthKey()){
+
+  const parts =
+    String(key)
+      .split("-")
+      .map(Number);
+
+  if(
+    parts.length !== 2 ||
+    !parts[0] ||
+    !parts[1]
+  ){
+    return key;
+  }
+
+  return new Date(
+    parts[0],
+    parts[1]-1,
+    1
+  ).toLocaleDateString(
+    "es-AR",
+    {
+      month:"long",
+      year:"numeric"
+    }
+  );
+
+}
+
+
+function formatDate(value){
+
+  if(!value){
+    return "";
+  }
+
+  const date =
+    new Date(value);
+
+  if(isNaN(date.getTime())){
+    return String(value);
+  }
+
+  return date.toLocaleDateString(
+    "es-AR"
+  );
+
+}
+
+
+/* =========================================================
+   CARGAR DATOS
+   ========================================================= */
+
+function createEmptyData(){
+
+  return {
+
+    schools:[
+      ...DEFAULT_SCHOOLS
+    ],
+
+    players:[],
+
+    payments:[],
+
+    expenses:[],
+
+    fees:{},
+
+    feeHistory:{}
+
+  };
+
+}
+
+
+function loadData(){
+
+  let saved = null;
+
+  try{
+
+    saved =
+      localStorage.getItem(
+        STORAGE_KEY
+      );
+
+  }catch(error){
+
+    console.error(
+      "No se pudo acceder a localStorage.",
+      error
+    );
+
+  }
+
+  if(saved){
+
+    try{
+
+      data =
+        JSON.parse(saved);
+
+    }catch(error){
+
+      console.error(
+        "Los datos guardados están dañados.",
+        error
+      );
+
+      data =
+        createEmptyData();
+
     }
 
-    // 3. Capturar el envío del formulario
-    const form = document.getElementById('jugadorForm');
-    const mensajeDiv = document.getElementById('mensaje');
-    const btnGuardar = document.getElementById('btnGuardar');
+  }else{
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    data =
+      createEmptyData();
 
-      btnGuardar.disabled = true;
-      btnGuardar.textContent = 'Guardando...';
-      mensajeDiv.style.display = 'none';
+  }
 
-      // Extraer datos del formulario
-      const formData = new FormData(form);
-      const rawData = Object.fromEntries(formData.entries());
+  normalizeData();
 
-      // Sanitizar datos ("" -> null)
-      const datosParaEnviar = sanitizarDatos(rawData);
+}
 
-      try {
-        // Guardar en la tabla 'jugadores'
-        const { data, error } = await supabase
-          .from('jugadores')
-          .insert([datosParaEnviar])
-          .select();
 
-        if (error) throw error;
+function normalizeData(){
 
-        // Mostrar mensaje de éxito
-        mensajeDiv.className = 'exito';
-        mensajeDiv.textContent = '¡Jugador guardado con éxito!';
-        mensajeDiv.style.display = 'block';
-        form.reset();
+  if(!data || typeof data !== "object"){
+    data = createEmptyData();
+  }
 
-      } catch (err) {
-        // Mostrar mensaje de error
-        mensajeDiv.className = 'error';
-        mensajeDiv.textContent = 'Error al guardar: ' + err.message;
-        mensajeDiv.style.display = 'block';
-      } finally {
-        btnGuardar.disabled = false;
-        btnGuardar.textContent = 'Guardar Jugador';
-      }
+  if(!Array.isArray(data.schools)){
+    data.schools = [];
+  }
+
+  if(!Array.isArray(data.players)){
+    data.players = [];
+  }
+
+  if(!Array.isArray(data.payments)){
+    data.payments = [];
+  }
+
+  if(!Array.isArray(data.expenses)){
+    data.expenses = [];
+  }
+
+  if(
+    !data.fees ||
+    typeof data.fees !== "object"
+  ){
+    data.fees = {};
+  }
+
+  if(
+    !data.feeHistory ||
+    typeof data.feeHistory !== "object"
+  ){
+    data.feeHistory = {};
+  }
+
+  if(data.schools.length === 0){
+
+    data.schools =
+      [...DEFAULT_SCHOOLS];
+
+  }
+
+  data.schools =
+    [...new Set(
+      data.schools
+        .map(String)
+        .map(x => x.trim())
+        .filter(Boolean)
+    )];
+
+}
+
+
+function persist(){
+
+  try{
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(data)
+    );
+
+    return true;
+
+  }catch(error){
+
+    console.error(
+      "No se pudieron guardar los datos.",
+      error
+    );
+
+    alert(
+      "No se pudieron guardar los datos en este dispositivo."
+    );
+
+    return false;
+
+  }
+
+}
+
+
+/* =========================================================
+   ESCUELA ACTUAL
+   ========================================================= */
+
+function currentSchool(){
+
+  if(!data.schools.length){
+    return "";
+  }
+
+  const index =
+    Number(
+      schoolSelect.value
+    );
+
+  if(
+    Number.isInteger(index) &&
+    index >= 0 &&
+    index < data.schools.length
+  ){
+    return data.schools[index];
+  }
+
+  return data.schools[0];
+
+}
+
+
+function populateSchools(){
+
+  const previous =
+    schoolSelect.value;
+
+  schoolSelect.innerHTML =
+    data.schools
+      .map(function(name,index){
+
+        return `
+          <option value="${index}">
+            ${esc(name)}
+          </option>
+        `;
+
+      })
+      .join("");
+
+  if(
+    previous !== "" &&
+    Number(previous) < data.schools.length
+  ){
+
+    schoolSelect.value =
+      previous;
+
+  }
+
+}
+
+
+/* =========================================================
+   JUGADORES
+   ========================================================= */
+
+function activePlayers(){
+
+  return data.players.filter(function(player){
+
+    return (
+      player.school === currentSchool() &&
+      player.active !== false
+    );
+
+  });
+
+}
+
+
+function allSchoolPlayers(){
+
+  return data.players.filter(function(player){
+
+    return (
+      player.school === currentSchool()
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   CUOTAS
+   ========================================================= */
+
+function getFee(
+  schoolName = currentSchool(),
+  key = monthKey()
+){
+
+  const history =
+    data.feeHistory[schoolName];
+
+  if(
+    history &&
+    history[key] !== undefined
+  ){
+
+    return Number(
+      history[key]
+    ) || 0;
+
+  }
+
+  if(
+    data.fees[schoolName] !== undefined
+  ){
+
+    return Number(
+      data.fees[schoolName]
+    ) || 0;
+
+  }
+
+  return 20000;
+
+}
+
+
+function setFeeForMonth(
+  schoolName,
+  key,
+  value
+){
+
+  if(!data.feeHistory[schoolName]){
+    data.feeHistory[schoolName] = {};
+  }
+
+  data.feeHistory[schoolName][key] =
+    Number(value);
+
+  data.fees[schoolName] =
+    Number(value);
+
+}
+
+
+function findPayment(
+  playerId,
+  key = monthKey()
+){
+
+  return data.payments.find(function(payment){
+
+    return (
+      payment.playerId === playerId &&
+      payment.school === currentSchool() &&
+      payment.monthKey === key
+    );
+
+  });
+
+}
+
+
+function paymentsForMonth(
+  key = monthKey()
+){
+
+  return data.payments.filter(function(payment){
+
+    return (
+      payment.school === currentSchool() &&
+      payment.monthKey === key
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+
+function navigate(view){
+
+  const validViews = [
+    "home",
+    "players",
+    "payments",
+    "reports",
+    "settings"
+  ];
+
+  if(
+    !validViews.includes(view)
+  ){
+    view = "home";
+  }
+
+  currentView = view;
+
+  document
+    .querySelectorAll("nav button")
+    .forEach(function(button){
+
+      button.classList.toggle(
+        "active",
+        button.dataset.view === view
+      );
+
     });
-  </script>
+
+  render();
+
+}
+
+
+/* Compatibilidad con las llamadas anteriores */
+
+function setView(view){
+
+  navigate(view);
+
+}
+
+
+function setViewByName(view){
+
+  navigate(view);
+
+}
+
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+
+function render(){
+
+  try{
+
+    if(currentView === "home"){
+      renderHome();
+      return;
+    }
+
+    if(currentView === "players"){
+      renderPlayers();
+      return;
+    }
+
+    if(currentView === "payments"){
+      renderPayments();
+      return;
+    }
+
+    if(currentView === "reports"){
+      renderReports();
+      return;
+    }
+
+    if(currentView === "settings"){
+      renderSettings();
+      return;
+    }
+
+    navigate("home");
+
+  }catch(error){
+
+    console.error(
+      "Error al mostrar la pantalla:",
+      error
+    );
+
+    app.innerHTML = `
+      <div class="card">
+        <h2>⚠️ Ocurrió un error</h2>
+        <p class="small">
+          La aplicación encontró un problema al mostrar esta pantalla.
+        </p>
+        <button
+          class="btn"
+          onclick="navigate('home')">
+          Volver al inicio
+        </button>
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+
+function renderHome(){
+
+  const list =
+    activePlayers();
+
+  const key =
+    monthKey();
+
+  const paidCount =
+    list.filter(function(player){
+
+      return Boolean(
+        findPayment(
+          player.id,
+          key
+        )
+      );
+
+    }).length;
+
+  const payments =
+    paymentsForMonth(key);
+
+  const collected =
+    payments.reduce(function(total,payment){
+
+      return (
+        total +
+        Number(payment.amount || 0)
+      );
+
+    },0);
+
+  const expected =
+    list.length *
+    getFee(
+      currentSchool(),
+      key
+    );
+
+  const pending =
+    Math.max(
+      0,
+      expected - collected
+    );
+
+  app.innerHTML = `
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="label">
+          Jugadores activos
+        </div>
+
+        <div class="metric">
+          ${list.length}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">
+          Pagaron este mes
+        </div>
+
+        <div class="metric">
+          ${paidCount}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">
+          Recaudado
+        </div>
+
+        <div class="metric">
+          ${money(collected)}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">
+          Pendiente estimado
+        </div>
+
+        <div class="metric">
+          ${money(pending)}
+        </div>
+      </div>
+
+    </div>
+
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="openPlayer()">
+        ＋ Agregar jugador
+      </button>
+
+      <button
+        type="button"
+        class="btn blue"
+        onclick="openPayment()">
+        ✓ Registrar pago
+      </button>
+
+      <button
+        type="button"
+        class="btn amber"
+        onclick="navigate('reports')">
+        📊 Ver reporte
+      </button>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2>
+        📅 Cuota de ${esc(monthName(key))}
+      </h2>
+
+      ${renderPendingRows(list,key)}
+
+    </div>
+
+
+    <div class="notice">
+
+      💡 Cuota actual:
+      <b>
+        ${money(
+          getFee(
+            currentSchool(),
+            key
+          )
+        )}
+      </b>.
+
+      Podés modificarla desde
+      ⚙️ Opciones.
+
+    </div>
+
+  `;
+
+}
+
+
+function renderPendingRows(
+  list,
+  key
+){
+
+  const pending =
+    list.filter(function(player){
+
+      return !findPayment(
+        player.id,
+        key
+      );
+
+    });
+
+  if(!pending.length){
+
+    return `
+      <div class="empty">
+        🎉 Todos los jugadores están al día.
+      </div>
+    `;
+
+  }
+
+  return pending.map(function(player){
+
+    return `
+
+      <div class="row">
+
+        <div class="info">
+
+          <b>
+            ${esc(player.name)}
+          </b>
+
+          <span class="small">
+            ${esc(
+              player.category ||
+              "Sin categoría"
+            )}
+          </span>
+
+        </div>
+
+        <button
+          type="button"
+          class="btn green"
+          style="padding:8px 10px"
+          onclick="quickPay('${attr(player.id)}','${attr(key)}')">
+
+          Pagó
+
+        </button>
+
+      </div>
+
+    `;
+
+  }).join("");
+
+}
+
+
+/* =========================================================
+   JUGADORES
+   ========================================================= */
+
+function renderPlayers(){
+
+  const list =
+    allSchoolPlayers();
+
+  app.innerHTML = `
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn green"
+        onclick="openPlayer()">
+
+        ＋ Nuevo jugador
+
+      </button>
+
+      <button
+        type="button"
+        class="btn ghost"
+        onclick="toggleInactive()">
+
+        👤
+        ${
+          showInactive
+          ? "Ocultar inactivos"
+          : "Ver activos/inactivos"
+        }
+
+      </button>
+
+    </div>
+
+
+    <input
+      class="search"
+      id="playerSearch"
+      placeholder="🔎 Buscar jugador..."
+      oninput="filterPlayers()"
+    >
+
+
+    <div
+      class="card"
+      id="playerList">
+
+      ${playerRows(list)}
+
+    </div>
+
+  `;
+
+}
+
+
+function toggleInactive(){
+
+  showInactive =
+    !showInactive;
+
+  render();
+
+}
+
+
+function playerRows(list){
+
+  let view =
+    showInactive
+      ? list
+      : list.filter(function(player){
+
+          return player.active !== false;
+
+        });
+
+  if(!view.length){
+
+    return `
+      <div class="empty">
+        No hay jugadores para mostrar.
+      </div>
+    `;
+
+  }
+
+  return view.map(function(player){
+
+    return `
+
+      <div class="row">
+
+        <div class="info">
+
+          <b>
+
+            ${esc(player.name)}
+
+            ${
+              player.active === false
+              ?
+              `
+                <span class="badge warn">
+                  INACTIVO
+                </span>
+              `
+              :
+              ""
+            }
+
+          </b>
+
+          <span class="small">
+
+            ${esc(
+              player.category ||
+              "Sin categoría"
+            )}
+
+            ·
+
+            ${esc(
+              player.phone ||
+              "Sin teléfono"
+            )}
+
+          </span>
+
+        </div>
+
+        <button
+          type="button"
+          class="btn"
+          style="padding:8px 10px"
+          onclick="openPlayer('${attr(player.id)}')">
+
+          Editar
+
+        </button>
+
+      </div>
+
+    `;
+
+  }).join("");
+
+}
+
+
+function filterPlayers(){
+
+  const input =
+    document.getElementById(
+      "playerSearch"
+    );
+
+  const container =
+    document.getElementById(
+      "playerList"
+    );
+
+  if(!input || !container){
+    return;
+  }
+
+  const query =
+    input.value
+      .trim()
+      .toLowerCase();
+
+  const filtered =
+    allSchoolPlayers()
+      .filter(function(player){
+
+        const text =
+          [
+            player.name,
+            player.category,
+            player.phone,
+            player.tutor
+          ]
+          .join(" ")
+          .toLowerCase();
+
+        return text.includes(query);
+
+      });
+
+  container.innerHTML =
+    playerRows(filtered);
+
+}
+
+
+/* =========================================================
+   PAGOS
+   ========================================================= */
+
+function renderPayments(){
+
+  const key =
+    monthKey();
+
+  app.innerHTML = `
+
+    <div class="card">
+
+      <div class="two">
+
+        <div class="field">
+
+          <label>
+            Mes a consultar
+          </label>
+
+          <input
+            type="month"
+            id="payMonth"
+            value="${key}"
+            onchange="renderPaymentsMonth()"
+          >
+
+        </div>
+
+        <div class="field">
+
+          <label>
+            Cuota aplicada
+          </label>
+
+          <input
+            id="payFee"
+            value="${money(
+              getFee(
+                currentSchool(),
+                key
+              )
+            )}"
+            disabled
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="paymentsBody"></div>
+
+  `;
+
+  renderPaymentsMonth();
+
+}
+
+
+function renderPaymentsMonth(){
+
+  const monthInput =
+    document.getElementById(
+      "payMonth"
+    );
+
+  if(!monthInput){
+    return;
+  }
+
+  const key =
+    monthInput.value ||
+    monthKey();
+
+  const list =
+    activePlayers();
+
+  const rows =
+    list.map(function(player){
+
+      const payment =
+        findPayment(
+          player.id,
+          key
+        );
+
+      if(payment){
+
+        return `
+
+          <div class="row">
+
+            <div class="info">
+
+              <b>
+                ${esc(player.name)}
+              </b>
+
+              <span class="small">
+
+                ${money(payment.amount)}
+
+                ·
+
+                ${esc(
+                  payment.method ||
+                  "Sin especificar"
+                )}
+
+                ·
+
+                ${formatDate(payment.date)}
+
+              </span>
+
+            </div>
+
+            <div>
+
+              <span class="badge paid">
+                PAGADA
+              </span>
+
+              <button
+                type="button"
+                class="btn ghost"
+                style="padding:7px 9px;margin-left:5px"
+                onclick="receipt('${attr(payment.id)}')">
+
+                🧾
+
+              </button>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+      return `
+
+        <div class="row">
+
+          <div class="info">
+
+            <b>
+              ${esc(player.name)}
+            </b>
+
+            <span class="small">
+              Sin pago registrado
+            </span>
+
+          </div>
+
+          <button
+            type="button"
+            class="btn green"
+            style="padding:8px 10px"
+            onclick="quickPay('${attr(player.id)}','${attr(key)}')">
+
+            Pagó
+
+          </button>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+  const body =
+    document.getElementById(
+      "paymentsBody"
+    );
+
+  if(!body){
+    return;
+  }
+
+  body.innerHTML = `
+
+    <div class="actions">
+
+      <button
+        type="button"
+        class="btn blue"
+        onclick="openPayment(null,'${attr(key)}')">
+
+        ＋ Registrar pago
+
+      </button>
+
+      <button
+        type="button"
+        class="btn ghost"
+        onclick="exportCSV('${attr(key)}')">
+
+        📥 Exportar mes
+
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2 style="margin-top:0">
+        Cuotas · ${esc(monthName(key))}
+      </h2>
+
+      ${
+        rows ||
+        `
+          <div class="empty">
+            No hay jugadores activos.
+          </div>
+        `
+      }
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   REPORTES
+   ========================================================= */
+
+function renderReports(){
+
+  const key =
+    reportMonth ||
+    monthKey();
+
+  const list =
+    activePlayers();
+
+  const payments =
+    paymentsForMonth(key);
+
+  const paidIds =
+    new Set(
+      payments.map(
+        payment =>
+          payment.playerId
+      )
+    );
+
+  const collected =
+    payments.reduce(function(total,payment){
+
+      return (
+        total +
+        Number(payment.amount || 0)
+      );
+
+    },0);
+
+  const expected =
+    list.length *
+    getFee(
+      currentSchool(),
+      key
+    );
+
+  const pending =
+    Math.max(
+      0,
+      expected - collected
+    );
+
+  const rate =
+    list.length
+      ?
+        Math.round(
+          paidIds.size /
+          list.length *
+          100
+        )
+      :
+        0;
+
+  const methods = {};
+
+  payments.forEach(function(payment){
+
+    const method =
+      payment.method ||
+      "Sin especificar";
+
+    methods[method] =
+      (
+        methods[method] || 0
+      ) +
+      Number(
+        payment.amount || 0
+      );
+
+  });
+
+  app.innerHTML = `
+
+    <div class="card">
+
+      <div class="field">
+
+        <label>
+          Reporte mensual
+        </label>
+
+        <input
+          type="month"
+          id="reportMonth"
+          value="${attr(key)}"
+          onchange="changeReportMonth(this.value)"
+        >
+
+      </div>
+
+    </div>
+
+
+    <div class="reportbar section">
+
+      <div class="mini">
+
+        <span class="small">
+          Jugadores
+        </span>
+
+        <b>
+          ${list.length}
+        </b>
+
+      </div>
+
+
+      <div class="mini">
+
+        <span class="small">
+          Pagaron
+        </span>
+
+        <b>
+          ${paidIds.size} (${rate}%)
+        </b>
+
+      </div>
+
+
+      <div class="mini">
+
+        <span class="small">
+          Recaudado
+        </span>
+
+        <b>
+          ${money(collected)}
+        </b>
+
+      </div>
+
+
+      <div class="mini">
+
+        <span class="small">
+          Pendiente
+        </span>
+
+        <b>
+          ${money(pending)}
+        </b>
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2 style="margin-top:0">
+        📊 Resumen de ${esc(monthName(key))}
+      </h2>
+
+      <p class="small">
+
+        Cuota utilizada:
+        <b>
+          ${money(
+            getFee(
+              currentSchool(),
+              key
+            )
+          )}
+        </b>
+
+      </p>
+
+
+      <table class="table">
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Medio de pago
+            </th>
+
+            <th class="right">
+              Importe
+            </th>
+
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          ${
+            Object.keys(methods).length
+
+            ?
+
+            Object.entries(methods)
+              .map(function(entry){
+
+                const method =
+                  entry[0];
+
+                const value =
+                  entry[1];
+
+                return `
+
+                  <tr>
+
+                    <td>
+                      ${esc(method)}
+                    </td>
+
+                    <td class="right">
+                      ${money(value)}
+                    </td>
+
+                  </tr>
+
+                `;
+
+              })
+              .join("")
+
+            :
+
+            `
+              <tr>
+
+                <td colspan="2">
+                  Sin pagos registrados.
+                </td>
+
+              </tr>
+            `
+          }
+
+        </tbody>
+
+      </table>
+
+
+      <div class="divider"></div>
+
+
+      <div class="actions">
+
+        <button
+          type="button"
+          class="btn blue"
+          onclick="exportCSV('${attr(key)}')">
+
+          📥 Exportar CSV
+
+        </button>
+
+        <button
+          type="button"
+          class="btn green"
+          onclick="printReport('${attr(key)}')">
+
+          🖨️ Imprimir reporte
+
+        </button>
+
+        <button
+          type="button"
+          class="btn ghost"
+          onclick="backup()">
+
+          💾 Copia de seguridad
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        Detalle de pagos
+      </h2>
+
+      ${
+        payments.length
+
+        ?
+
+        payments.map(function(payment){
+
+          const player =
+            data.players.find(
+              function(item){
+                return item.id === payment.playerId;
+              }
+            );
+
+          return `
+
+            <div class="row">
+
+              <div class="info">
+
+                <b>
+                  ${esc(
+                    player
+                      ? player.name
+                      : "Jugador eliminado"
+                  )}
+                </b>
+
+                <span class="small">
+
+                  ${esc(
+                    payment.method ||
+                    "Sin especificar"
+                  )}
+
+                  ·
+
+                  ${formatDate(payment.date)}
+
+                  ·
+
+                  ${money(payment.amount)}
+
+                </span>
+
+              </div>
+
+              <button
+                type="button"
+                class="btn ghost"
+                style="padding:7px 9px"
+                onclick="receipt('${attr(payment.id)}')">
+
+                🧾
+
+              </button>
+
+            </div>
+
+          `;
+
+        }).join("")
+
+        :
+
+        `
+          <div class="empty">
+            No hay pagos para este mes.
+          </div>
+        `
+      }
+
+    </div>
+
+  `;
+
+}
+
+
+function changeReportMonth(value){
+
+  reportMonth =
+    value ||
+    monthKey();
+
+  render();
+
+}
+
+
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
+
+function renderSettings(){
+
+  const current =
+    currentSchool();
+
+  const key =
+    monthKey();
+
+  const history =
+    Object.entries(
+      data.feeHistory[current] || {}
+    )
+    .sort(function(a,b){
+
+      return b[0].localeCompare(
+        a[0]
+      );
+
+    });
+
+  app.innerHTML = `
+
+    <div class="card">
+
+      <h2 style="margin-top:0">
+        ⚙️ Configuración
+      </h2>
+
+
+      <div class="field">
+
+        <label>
+          Cuota para ${esc(monthName(key))}
+        </label>
+
+        <input
+          id="fee"
+          type="number"
+          inputmode="decimal"
+          value="${getFee(current,key)}"
+        >
+
+      </div>
+
+
+      <button
+        type="button"
+        class="btn green"
+        style="width:100%"
+        onclick="saveFee()">
+
+        Guardar cuota del mes
+
+      </button>
+
+
+      <p class="small">
+
+        El valor queda asociado al mes actual.
+        Los meses anteriores conservan su importe.
+
+      </p>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        🗓️ Historial de cuotas
+      </h2>
+
+      ${
+        history.length
+
+        ?
+
+        history.map(function(entry){
+
+          const k =
+            entry[0];
+
+          const value =
+            entry[1];
+
+          return `
+
+            <div class="row">
+
+              <div class="info">
+
+                <b>
+                  ${esc(monthName(k))}
+                </b>
+
+                <span class="small">
+                  Cuota registrada
+                </span>
+
+              </div>
+
+              <span class="badge bluebadge">
+                ${money(value)}
+              </span>
+
+            </div>
+
+          `;
+
+        }).join("")
+
+        :
+
+        `
+          <div class="empty">
+            Todavía no hay historial de cuotas.
+          </div>
+        `
+      }
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        🏫 Escuelas / sedes
+      </h2>
+
+      ${
+        data.schools.map(function(name,index){
+
+          return `
+
+            <div class="row">
+
+              <div class="info">
+
+                <b>
+                  ${esc(name)}
+                </b>
+
+              </div>
+
+              <button
+                type="button"
+                class="btn"
+                style="padding:8px 10px"
+                onclick="renameSchool(${index})">
+
+                Renombrar
+
+              </button>
+
+            </div>
+
+          `;
+
+        }).join("")
+      }
+
+
+      <div class="actions">
+
+        <button
+          type="button"
+          class="btn green"
+          onclick="addSchool()">
+
+          ＋ Agregar escuela
+
+        </button>
+
+        <button
+          type="button"
+          class="btn"
+          onclick="backup()">
+
+          💾 Copia
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        📤 Exportación
+      </h2>
+
+      <p class="small">
+
+        Podés exportar todos los pagos registrados
+        a CSV o hacer una copia completa en JSON.
+
+      </p>
+
+
+      <div class="actions">
+
+        <button
+          type="button"
+          class="btn blue"
+          onclick="exportCSV()">
+
+          📥 Exportar todos los pagos
+
+        </button>
+
+        <button
+          type="button"
+          class="btn ghost"
+          onclick="backup()">
+
+          💾 Backup completo
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        📱 Aplicación
+      </h2>
+
+      <p class="small">
+
+        Esta versión funciona directamente en el navegador.
+        Los datos se guardan localmente en este dispositivo.
+
+      </p>
+
+      <div class="status ok">
+        ✓ Aplicación funcionando en modo local.
+      </div>
+
+    </div>
+
+
+    <div class="card section">
+
+      <h2 style="margin-top:0">
+        🗑️ Datos
+      </h2>
+
+      <button
+        type="button"
+        class="btn danger"
+        style="width:100%"
+        onclick="resetAll()">
+
+        Borrar todos los datos
+
+      </button>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   FORMULARIO JUGADOR
+   ========================================================= */
+
+function openPlayer(playerId){
+
+  editId =
+    playerId ||
+    null;
+
+  formType =
+    "player";
+
+  const player =
+    playerId
+      ?
+        data.players.find(
+          function(item){
+            return item.id === playerId;
+          }
+        ) || {}
+      :
+        {};
+
+  modalTitle.textContent =
+    playerId
+      ?
+        "Editar jugador"
+      :
+        "Nuevo jugador";
+
+  form.innerHTML = `
+
+    <div class="field">
+
+      <label>
+        Nombre y apellido *
+      </label>
+
+      <input
+        id="f_name"
+        value="${attr(player.name || "")}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Categoría
+      </label>
+
+      <input
+        id="f_cat"
+        placeholder="Ej. Sub 14"
+        value="${attr(player.category || "")}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Fecha de nacimiento
+      </label>
+
+      <input
+        id="f_birth"
+        type="date"
+        value="${attr(player.birth || "")}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Padre / madre / tutor
+      </label>
+
+      <input
+        id="f_tutor"
+        value="${attr(player.tutor || "")}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Teléfono
+      </label>
+
+      <input
+        id="f_phone"
+        inputmode="tel"
+        value="${attr(player.phone || "")}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Estado
+      </label>
+
+      <select id="f_active">
+
+        <option
+          value="true"
+          ${player.active !== false ? "selected" : ""}>
+
+          Activo
+
+        </option>
+
+        <option
+          value="false"
+          ${player.active === false ? "selected" : ""}>
+
+          Inactivo
+
+        </option>
+
+      </select>
+
+    </div>
+
+  `;
+
+  showModal();
+
+}
+
+
+/* =========================================================
+   FORMULARIO PAGO
+   ========================================================= */
+
+function openPayment(
+  playerId = null,
+  key = monthKey()
+){
+
+  formType =
+    "payment";
+
+  editId =
+    null;
+
+  const list =
+    activePlayers();
+
+  modalTitle.textContent =
+    "Registrar cuota";
+
+  if(!list.length){
+
+    form.innerHTML = `
+
+      <div class="empty">
+
+        Primero necesitás agregar
+        al menos un jugador activo.
+
+      </div>
+
+    `;
+
+    showModal();
+
+    return;
+
+  }
+
+  form.innerHTML = `
+
+    <div class="field">
+
+      <label>
+        Jugador *
+      </label>
+
+      <select id="f_player">
+
+        ${
+          list.map(function(player){
+
+            return `
+
+              <option
+                value="${attr(player.id)}"
+                ${
+                  player.id === playerId
+                    ? "selected"
+                    : ""
+                }>
+
+                ${esc(player.name)}
+
+              </option>
+
+            `;
+
+          }).join("")
+        }
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Mes
+      </label>
+
+      <input
+        id="f_month"
+        type="month"
+        value="${attr(key)}"
+        onchange="updatePaymentAmount()"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Importe
+      </label>
+
+      <input
+        id="f_amount"
+        type="number"
+        inputmode="decimal"
+        value="${getFee(currentSchool(),key)}"
+      >
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Medio de pago
+      </label>
+
+      <select id="f_method">
+
+        <option>
+          Efectivo
+        </option>
+
+        <option>
+          Transferencia
+        </option>
+
+        <option>
+          Mercado Pago
+        </option>
+
+        <option>
+          Otro
+        </option>
+
+      </select>
+
+    </div>
+
+
+    <div class="field">
+
+      <label>
+        Observación
+      </label>
+
+      <input
+        id="f_note"
+        placeholder="Opcional"
+      >
+
+    </div>
+
+  `;
+
+  showModal();
+
+}
+
+
+function updatePaymentAmount(){
+
+  const month =
+    document.getElementById(
+      "f_month"
+    );
+
+  const amount =
+    document.getElementById(
+      "f_amount"
+    );
+
+  if(
+    month &&
+    amount
+  ){
+
+    amount.value =
+      getFee(
+        currentSchool(),
+        month.value
+      );
+
+  }
+
+}
+
+
+/* =========================================================
+   GUARDAR FORMULARIO
+   ========================================================= */
+
+function saveForm(){
+
+  if(formType === "player"){
+
+    savePlayer();
+
+    return;
+
+  }
+
+  if(formType === "payment"){
+
+    savePayment();
+
+    return;
+
+  }
+
+}
+
+
+/* =========================================================
+   GUARDAR JUGADOR
+   ========================================================= */
+
+function savePlayer(){
+
+  const nameInput =
+    document.getElementById(
+      "f_name"
+    );
+
+  const name =
+    nameInput
+      ? nameInput.value.trim()
+      : "";
+
+  if(!name){
+
+    alert(
+      "Ingresá el nombre del jugador."
+    );
+
+    return;
+
+  }
+
+  const player = {
+
+    id:
+      editId ||
+      makeId(),
+
+    name:name,
+
+    category:
+      document
+        .getElementById("f_cat")
+        .value
+        .trim(),
+
+    birth:
+      document
+        .getElementById("f_birth")
+        .value,
+
+    tutor:
+      document
+        .getElementById("f_tutor")
+        .value
+        .trim(),
+
+    phone:
+      document
+        .getElementById("f_phone")
+        .value
+        .trim(),
+
+    school:
+      currentSchool(),
+
+    active:
+      document
+        .getElementById("f_active")
+        .value === "true"
+
+  };
+
+
+  if(editId){
+
+    const index =
+      data.players.findIndex(
+        function(item){
+          return item.id === editId;
+        }
+      );
+
+    if(index >= 0){
+
+      data.players[index] =
+        player;
+
+    }
+
+  }else{
+
+    data.players.push(
+      player
+    );
+
+  }
+
+  persist();
+
+  closeModal();
+
+  render();
+
+}
+
+
+/* =========================================================
+   GUARDAR PAGO
+   ========================================================= */
+
+function savePayment(){
+
+  const playerId =
+    document
+      .getElementById("f_player")
+      .value;
+
+  const key =
+    document
+      .getElementById("f_month")
+      .value;
+
+  const amount =
+    Number(
+      document
+        .getElementById("f_amount")
+        .value
+    );
+
+  const method =
+    document
+      .getElementById("f_method")
+      .value;
+
+  const note =
+    document
+      .getElementById("f_note")
+      .value
+      .trim();
+
+  if(
+    !playerId ||
+    !key ||
+    !amount ||
+    amount <= 0
+  ){
+
+    alert(
+      "Completá jugador, mes e importe."
+    );
+
+    return;
+
+  }
+
+  const already =
+    findPayment(
+      playerId,
+      key
+    );
+
+  if(already){
+
+    alert(
+      "Ese jugador ya tiene un pago registrado para ese mes."
+    );
+
+    return;
+
+  }
+
+  data.payments.push({
+
+    id:makeId(),
+
+    playerId:playerId,
+
+    school:currentSchool(),
+
+    month:monthName(key),
+
+    monthKey:key,
+
+    amount:amount,
+
+    method:method,
+
+    note:note,
+
+    date:new Date().toISOString()
+
+  });
+
+  persist();
+
+  closeModal();
+
+  render();
+
+}
+
+
+/* =========================================================
+   PAGO RÁPIDO
+   ========================================================= */
+
+function quickPay(
+  playerId,
+  key = monthKey()
+){
+
+  if(
+    findPayment(
+      playerId,
+      key
+    )
+  ){
+
+    alert(
+      "Este jugador ya figura como pagado en ese mes."
+    );
+
+    return;
+
+  }
+
+  const amount =
+    getFee(
+      currentSchool(),
+      key
+    );
+
+  data.payments.push({
+
+    id:makeId(),
+
+    playerId:playerId,
+
+    school:currentSchool(),
+
+    month:monthName(key),
+
+    monthKey:key,
+
+    amount:amount,
+
+    method:"No especificado",
+
+    note:"Pago rápido",
+
+    date:new Date().toISOString()
+
+  });
+
+  persist();
+
+  render();
+
+}
+
+
+/* =========================================================
+   CUOTA
+   ========================================================= */
+
+function saveFee(){
+
+  const input =
+    document.getElementById(
+      "fee"
+    );
+
+  if(!input){
+    return;
+  }
+
+  const value =
+    Number(input.value);
+
+  if(
+    !Number.isFinite(value) ||
+    value <= 0
+  ){
+
+    alert(
+      "Ingresá una cuota válida."
+    );
+
+    return;
+
+  }
+
+  const key =
+    monthKey();
+
+  setFeeForMonth(
+    currentSchool(),
+    key,
+    value
+  );
+
+  persist();
+
+  render();
+
+}
+
+
+/* =========================================================
+   ESCUELAS
+   ========================================================= */
+
+function addSchool(){
+
+  const value =
+    prompt(
+      "Nombre de la nueva escuela / sede:"
+    );
+
+  if(
+    !value ||
+    !value.trim()
+  ){
+    return;
+  }
+
+  const name =
+    value.trim();
+
+  if(
+    data.schools.includes(name)
+  ){
+
+    alert(
+      "Esa escuela ya existe."
+    );
+
+    return;
+
+  }
+
+  data.schools.push(
+    name
+  );
+
+  persist();
+
+  populateSchools();
+
+  schoolSelect.value =
+    String(
+      data.schools.length - 1
+    );
+
+  render();
+
+}
+
+
+function renameSchool(index){
+
+  if(
+    index < 0 ||
+    index >= data.schools.length
+  ){
+    return;
+  }
+
+  const oldName =
+    data.schools[index];
+
+  const value =
+    prompt(
+      "Nuevo nombre:",
+      oldName
+    );
+
+  if(
+    !value ||
+    !value.trim()
+  ){
+    return;
+  }
+
+  const newName =
+    value.trim();
+
+  if(
+    newName === oldName
+  ){
+    return;
+  }
+
+  if(
+    data.schools.includes(newName)
+  ){
+
+    alert(
+      "Ya existe una escuela con ese nombre."
+    );
+
+    return;
+
+  }
+
+  data.schools[index] =
+    newName;
+
+
+  data.players.forEach(
+    function(player){
+
+      if(player.school === oldName){
+
+        player.school =
+          newName;
+
+      }
+
+    }
+  );
+
+
+  data.payments.forEach(
+    function(payment){
+
+      if(payment.school === oldName){
+
+        payment.school =
+          newName;
+
+      }
+
+    }
+  );
+
+
+  if(
+    data.fees[oldName] !== undefined
+  ){
+
+    data.fees[newName] =
+      data.fees[oldName];
+
+    delete data.fees[oldName];
+
+  }
+
+
+  if(
+    data.feeHistory[oldName]
+  ){
+
+    data.feeHistory[newName] =
+      data.feeHistory[oldName];
+
+    delete data.feeHistory[oldName];
+
+  }
+
+
+  persist();
+
+  populateSchools();
+
+  render();
+
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+function showModal(){
+
+  modal.classList.add(
+    "show"
+  );
+
+}
+
+
+function closeModal(){
+
+  modal.classList.remove(
+    "show"
+  );
+
+  editId =
+    null;
+
+  formType =
+    null;
+
+}
+
+
+/* =========================================================
+   BACKUP
+   ========================================================= */
+
+function backup(){
+
+  const json =
+    JSON.stringify(
+      data,
+      null,
+      2
+    );
+
+  const blob =
+    new Blob(
+      [json],
+      {
+        type:"application/json"
+      }
+    );
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+  link.href =
+    url;
+
+  link.download =
+    "mis-escuelas-backup.json";
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  link.remove();
+
+  setTimeout(
+    function(){
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    },
+    1000
+  );
+
+}
+
+
+/* =========================================================
+   EXPORTAR CSV
+   ========================================================= */
+
+function exportCSV(
+  key = null
+){
+
+  const rows =
+    data.payments.filter(
+      function(payment){
+
+        return (
+          payment.school ===
+          currentSchool()
+        )
+        &&
+        (
+          !key ||
+          payment.monthKey === key
+        );
+
+      }
+    );
+
+
+  const header = [
+
+    "Fecha",
+    "Mes",
+    "Escuela",
+    "Jugador",
+    "Categoría",
+    "Importe",
+    "Medio de pago",
+    "Observación"
+
+  ];
+
+
+  const output = [
+    header
+  ];
+
+
+  rows.forEach(
+    function(payment){
+
+      const player =
+        data.players.find(
+          function(item){
+            return item.id === payment.playerId;
+          }
+        ) || {};
+
+
+      output.push([
+
+        formatDate(
+          payment.date
+        ),
+
+        payment.month,
+
+        payment.school,
+
+        player.name || "",
+
+        player.category || "",
+
+        payment.amount,
+
+        payment.method || "",
+
+        payment.note || ""
+
+      ]);
+
+    }
+  );
+
+
+  const csv =
+    "\ufeff" +
+    output
+      .map(function(row){
+
+        return row
+          .map(function(value){
+
+            return (
+              '"' +
+              String(
+                value ?? ""
+              ).replace(
+                /"/g,
+                '""'
+              ) +
+              '"'
+            );
+
+          })
+          .join(";");
+
+      })
+      .join("\n");
+
+
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          "text/csv;charset=utf-8"
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const link =
+    document.createElement(
+      "a"
+    );
+
+
+  link.href =
+    url;
+
+
+  link.download =
+    key
+      ?
+        "mis-escuelas-pagos-" +
+        key +
+        ".csv"
+      :
+        "mis-escuelas-todos-los-pagos.csv";
+
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  link.remove();
+
+
+  setTimeout(
+    function(){
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    },
+    1000
+  );
+
+}
+
+
+/* =========================================================
+   COMPROBANTE
+   ========================================================= */
+
+function receipt(paymentId){
+
+  const payment =
+    data.payments.find(
+      function(item){
+
+        return item.id === paymentId;
+
+      }
+    );
+
+
+  if(!payment){
+
+    alert(
+      "No se encontró el pago."
+    );
+
+    return;
+
+  }
+
+
+  const player =
+    data.players.find(
+      function(item){
+
+        return item.id === payment.playerId;
+
+      }
+    ) || {};
+
+
+  const html = `
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+Comprobante - Mis Escuelas
+</title>
+
+<style>
+
+body{
+  font-family:Arial,sans-serif;
+  padding:30px;
+  color:#111827;
+  max-width:520px;
+  margin:auto;
+}
+
+.box{
+  border:1px solid #ddd;
+  border-radius:14px;
+  padding:24px;
+}
+
+h1{
+  margin:0 0 5px;
+}
+
+h2{
+  margin-top:25px;
+  border-bottom:1px solid #ddd;
+  padding-bottom:8px;
+}
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  padding:9px 0;
+  border-bottom:1px solid #eee;
+}
+
+.total{
+  font-size:24px;
+  font-weight:bold;
+  margin-top:20px;
+}
+
+.muted{
+  color:#666;
+  font-size:12px;
+}
+
+button{
+  margin-top:20px;
+  padding:10px 16px;
+  border:0;
+  border-radius:8px;
+  background:#111827;
+  color:white;
+}
+
+@media print{
+
+  button{
+    display:none;
+  }
+
+  body{
+    padding:0;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>
+⚽ Mis Escuelas
+</h1>
+
+<div class="muted">
+Comprobante de pago
+</div>
+
+<h2>
+${esc(payment.school)}
+</h2>
+
+<div class="row">
+<span>Jugador</span>
+<b>
+${esc(player.name || "")}
+</b>
+</div>
+
+<div class="row">
+<span>Categoría</span>
+<span>
+${esc(player.category || "")}
+</span>
+</div>
+
+<div class="row">
+<span>Período</span>
+<span>
+${esc(payment.month || payment.monthKey)}
+</span>
+</div>
+
+<div class="row">
+<span>Medio de pago</span>
+<span>
+${esc(payment.method || "")}
+</span>
+</div>
+
+<div class="row">
+<span>Fecha</span>
+<span>
+${esc(formatDate(payment.date))}
+</span>
+</div>
+
+${
+  payment.note
+  ?
+  `
+    <div class="row">
+      <span>Observación</span>
+      <span>
+        ${esc(payment.note)}
+      </span>
+    </div>
+  `
+  :
+  ""
+}
+
+<div class="total">
+
+Total:
+${money(payment.amount)}
+
+</div>
+
+<button onclick="window.print()">
+Imprimir / Guardar PDF
+</button>
+
+</div>
+
+</body>
+
+</html>
+
+`;
+
+
+  const windowRef =
+    window.open(
+      "",
+      "_blank"
+    );
+
+
+  if(!windowRef){
+
+    alert(
+      "El navegador bloqueó la ventana. Permití ventanas emergentes."
+    );
+
+    return;
+
+  }
+
+
+  windowRef.document.open();
+
+  windowRef.document.write(
+    html
+  );
+
+  windowRef.document.close();
+
+}
+
+
+/* =========================================================
+   IMPRIMIR REPORTE
+   ========================================================= */
+
+function printReport(key){
+
+  const payments =
+    paymentsForMonth(key);
+
+  const players =
+    activePlayers();
+
+  const collected =
+    payments.reduce(
+      function(total,payment){
+
+        return (
+          total +
+          Number(payment.amount || 0)
+        );
+
+      },
+      0
+    );
+
+
+  const expected =
+    players.length *
+    getFee(
+      currentSchool(),
+      key
+    );
+
+
+  const paid =
+    new Set(
+      payments.map(
+        function(payment){
+          return payment.playerId;
+        }
+      )
+    ).size;
+
+
+  const rows =
+    payments.map(
+      function(payment){
+
+        const player =
+          data.players.find(
+            function(item){
+
+              return item.id ===
+                payment.playerId;
+
+            }
+          ) || {};
+
+
+        return `
+
+          <tr>
+
+            <td>
+              ${esc(player.name || "")}
+            </td>
+
+            <td>
+              ${esc(player.category || "")}
+            </td>
+
+            <td>
+              ${esc(payment.method || "")}
+            </td>
+
+            <td>
+              ${esc(formatDate(payment.date))}
+            </td>
+
+            <td>
+              ${money(payment.amount)}
+            </td>
+
+          </tr>
+
+        `;
+
+      }
+    ).join("");
+
+
+  const reportWindow =
+    window.open(
+      "",
+      "_blank"
+    );
+
+
+  if(!reportWindow){
+
+    alert(
+      "Permití ventanas emergentes para imprimir el reporte."
+    );
+
+    return;
+
+  }
+
+
+  reportWindow.document.write(`
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+Reporte Mis Escuelas
+</title>
+
+<style>
+
+body{
+  font-family:Arial,sans-serif;
+  padding:30px;
+}
+
+h1{
+  margin-bottom:5px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th,
+td{
+  border-bottom:1px solid #ddd;
+  padding:8px;
+  text-align:left;
+}
+
+.cards{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:20px 0;
+}
+
+.card{
+  border:1px solid #ddd;
+  padding:12px;
+  border-radius:8px;
+  min-width:140px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>
+⚽ Mis Escuelas
+</h1>
+
+<h2>
+${esc(currentSchool())}
+</h2>
+
+<h3>
+${esc(monthName(key))}
+</h3>
+
+<div class="cards">
+
+<div class="card">
+Jugadores:
+<b>${players.length}</b>
+</div>
+
+<div class="card">
+Pagaron:
+<b>${paid}</b>
+</div>
+
+<div class="card">
+Recaudado:
+<b>${money(collected)}</b>
+</div>
+
+<div class="card">
+Pendiente:
+<b>
+${money(
+  Math.max(
+    0,
+    expected - collected
+  )
+)}
+</b>
+</div>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Jugador
+</th>
+
+<th>
+Categoría
+</th>
+
+<th>
+Medio
+</th>
+
+<th>
+Fecha
+</th>
+
+<th>
+Importe
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${
+  rows ||
+  `
+    <tr>
+      <td colspan="5">
+        Sin pagos.
+      </td>
+    </tr>
+  `
+}
+
+</tbody>
+
+</table>
+
+<script>
+
+window.onload = function(){
+
+  window.print();
+
+};
+
+<\/script>
+
+</body>
+
+</html>
+
+`);
+
+
+  reportWindow.document.close();
+
+}
+
+
+/* =========================================================
+   BORRAR DATOS
+   ========================================================= */
+
+function resetAll(){
+
+  const confirmed =
+    confirm(
+      "¿Seguro que querés borrar todos los datos de Mis Escuelas en este dispositivo?"
+    );
+
+
+  if(!confirmed){
+    return;
+  }
+
+
+  try{
+
+    localStorage.removeItem(
+      STORAGE_KEY
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+  }
+
+
+  location.reload();
+
+}
+
+
+/* =========================================================
+   INICIALIZACIÓN
+   ========================================================= */
+
+function init(){
+
+  loadData();
+
+  populateSchools();
+
+  schoolSelect.addEventListener(
+    "change",
+    function(){
+
+      reportMonth =
+        monthKey();
+
+      render();
+
+    }
+  );
+
+  navigate("home");
+
+}
+
+
+/* =========================================================
+   ARRANCAR
+   ========================================================= */
+
+init();
+
+</script>
+
 </body>
 </html>
+```
