@@ -463,7 +463,163 @@ try{
   );
 
 }
+// 1. INICIALIZACIÓN DE CLIENTE Y ESTADO LOCAL
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let data = {
+  schools: [],
+  players: [],
+  fees: [],
+  payments: []
+};
+
+// 2. FUNCIONES DE CARGA Y LECTURA (SELECT)
+
+// Cargar todo al iniciar la aplicación
+async function init() {
+  await Promise.all([
+    loadSchools(),
+    loadPlayers(),
+    loadFees(),
+    loadPagos()
+  ]);
+
+  renderSchoolOptions();
+  render();
+}
+
+async function loadSchools() {
+  const { data: schoolsData, error } = await supabaseClient
+    .from('schools')
+    .select('*');
+
+  if (error) {
+    console.error('Error al cargar escuelas:', error.message);
+  } else if (schoolsData) {
+    data.schools = schoolsData;
+  }
+}
+
+async function loadPlayers() {
+  const { data: playersData, error } = await supabaseClient
+    .from('players')
+    .select('*');
+
+  if (error) {
+    console.error('Error al cargar jugadores:', error.message);
+  } else if (playersData) {
+    data.players = playersData;
+  }
+}
+
+async function loadFees() {
+  const { data: feesData, error } = await supabaseClient
+    .from('fees')
+    .select('*');
+
+  if (error) {
+    console.error('Error al cargar aranceles/fees:', error.message);
+  } else if (feesData) {
+    data.fees = feesData;
+  }
+}
+
+async function loadPagos() {
+  const { data: pagosData, error } = await supabaseClient
+    .from('pagos')
+    .select('*');
+
+  if (error) {
+    console.error('Error al cargar pagos:', error.message);
+  } else if (pagosData) {
+    data.payments = pagosData;
+  }
+}
+
+// 3. FUNCIONES DE ESCRITURA (INSERT / UPSERT / DELETE)
+
+// Guardar o actualizar un jugador
+async function savePlayerToCloud(playerObj) {
+  const { data: savedPlayer, error } = await supabaseClient
+    .from('players')
+    .upsert({
+      id: playerObj.id || undefined, // Si existe actualiza, si no crea uno nuevo
+      name: playerObj.name || playerObj.nombre,
+      category: playerObj.category || playerObj.categoria,
+      birth: playerObj.birth || playerObj.fecha_nacimiento,
+      tutor: playerObj.tutor,
+      phone: playerObj.phone || playerObj.telefono,
+      school_id: playerObj.schoolId || playerObj.school,
+      active: playerObj.active !== undefined ? playerObj.active : true
+    })
+    .select();
+
+  if (error) {
+    alert('Error al guardar el jugador: ' + error.message);
+  } else {
+    await loadPlayers();
+    render();
+  }
+}
+
+// Registrar un pago
+async function savePaymentToCloud(paymentObj) {
+  const { data: savedPayment, error } = await supabaseClient
+    .from('pagos')
+    .insert([
+      {
+        player_id: paymentObj.playerId || paymentObj.player_id,
+        fee_id: paymentObj.feeId || paymentObj.fee_id || null,
+        school_id: paymentObj.schoolId || paymentObj.school,
+        amount: paymentObj.amount || paymentObj.monto,
+        month_key: paymentObj.monthKey || paymentObj.mes_key,
+        method: paymentObj.method || paymentObj.medio_pago,
+        note: paymentObj.note || paymentObj.observacion,
+        date: paymentObj.date || new Date().toISOString()
+      }
+    ])
+    .select();
+
+  if (error) {
+    alert('Error al registrar el pago: ' + error.message);
+  } else {
+    await loadPagos();
+    render();
+  }
+}
+
+// Eliminar un jugador
+async function deletePlayerFromCloud(playerId) {
+  if (!confirm('¿Seguro que deseas eliminar este jugador?')) return;
+
+  const { error } = await supabaseClient
+    .from('players')
+    .delete()
+    .eq('id', playerId);
+
+  if (error) {
+    alert('Error al eliminar: ' + error.message);
+  } else {
+    await loadPlayers();
+    render();
+  }
+}
+
+// 4. AUXILIARES DE INTERFAZ DE USUARIO
+
+function renderSchoolOptions() {
+  const schoolSelect = document.getElementById('school');
+  if (!schoolSelect) return;
+
+  schoolSelect.innerHTML = data.schools
+    .map(s => `<option value="${s.id}">${s.name || s.nombre}</option>`)
+    .join('');
+
+  schoolSelect.onchange = render;
+}
+
+// Ejecutar la carga inicial al abrir la página
+document.addEventListener('DOMContentLoaded', init);
 
 /* =========================================================
    DATOS LOCALES
