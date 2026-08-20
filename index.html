@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Mis Escuelas ⚽ v3.1</title>
+<title>Mis Escuelas ⚽ v3.2</title>
 
 <style>
 :root{
@@ -373,7 +373,6 @@ nav span{
   </button>
 </nav>
 
-<!-- CDN Correcto para la última versión bundle de Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -396,7 +395,7 @@ let reportMonth = monthKey();
 let showInactive = false;
 
 /* =========================================================
-   INICIALIZACIÓN SEGURO
+   INICIALIZACIÓN
    ========================================================= */
 
 async function init() {
@@ -404,15 +403,20 @@ async function init() {
     if (window.supabase) {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } else {
-      alert('No se pudo cargar Supabase. Verifica tu conexión a internet.');
+      alert('No se pudo cargar Supabase. Verifica tu conexión.');
       return;
     }
 
     await reloadAllData();
 
     if (data.schools.length === 0) {
-      const { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
-      if (!error && newS) data.schools = newS;
+      // Intenta insertar con 'name' o 'nombre'
+      let { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
+      if (error) {
+        const res = await supabaseClient.from('schools').insert([{ nombre: 'Sede Principal' }]).select();
+        newS = res.data;
+      }
+      if (newS) data.schools = newS;
     }
 
     renderSchoolOptions();
@@ -444,12 +448,12 @@ function renderSchoolOptions() {
   if (!select) return;
   
   if (data.schools.length === 0) {
-    select.innerHTML = '<option value="">Sin escuelas</option>';
+    select.innerHTML = '<option value="">Sin escuelas cargadas</option>';
     return;
   }
 
   select.innerHTML = data.schools
-    .map(s => `<option value="${s.id}">${esc(s.name || s.nombre)}</option>`)
+    .map(s => `<option value="${s.id}">${esc(s.name || s.nombre || 'Sede sin nombre')}</option>`)
     .join('');
 }
 
@@ -490,31 +494,38 @@ function formatDate(v) {
   return isNaN(d) ? String(v) : d.toLocaleDateString('es-AR');
 }
 
+function getPlayerSchoolId(p) {
+  return p.school_id || p.school || p.escuela_id || p.escuela;
+}
+
 /* =========================================================
    REGLAS DE NEGOCIO
    ========================================================= */
 
 function ps() {
-  return data.players.filter(p => String(p.school_id || p.school) === String(currentSchoolId()) && p.active !== false);
+  const sId = currentSchoolId();
+  return data.players.filter(p => (!sId || String(getPlayerSchoolId(p)) === String(sId)) && p.active !== false);
 }
 
 function allSchoolPlayers() {
-  return data.players.filter(p => String(p.school_id || p.school) === String(currentSchoolId()));
+  const sId = currentSchoolId();
+  return data.players.filter(p => !sId || String(getPlayerSchoolId(p)) === String(sId));
 }
 
 function fee(sId = currentSchoolId(), key = monthKey()) {
-  const item = data.fees.find(f => String(f.school_id || f.school) === String(sId) && f.month_key === key);
+  const item = data.fees.find(f => String(f.school_id || f.school || f.escuela_id) === String(sId) && f.month_key === key);
   if (item) return Number(item.amount || item.monto);
-  const gen = data.fees.find(f => String(f.school_id || f.school) === String(sId));
+  const gen = data.fees.find(f => String(f.school_id || f.school || f.escuela_id) === String(sId));
   return gen ? Number(gen.amount || gen.monto) : 20000;
 }
 
 function paymentFor(playerId, key = monthKey()) {
-  return data.payments.find(p => String(p.player_id || p.playerId) === String(playerId) && p.month_key === key);
+  return data.payments.find(p => String(p.player_id || p.playerId || p.jugador_id) === String(playerId) && p.month_key === key);
 }
 
 function paymentsForMonth(key = reportMonth) {
-  return data.payments.filter(p => String(p.school_id || p.school) === String(currentSchoolId()) && p.month_key === key);
+  const sId = currentSchoolId();
+  return data.payments.filter(p => (!sId || String(p.school_id || p.school || p.escuela_id) === String(sId)) && p.month_key === key);
 }
 
 /* =========================================================
@@ -695,7 +706,7 @@ function reports() {
   const key = reportMonth || monthKey();
   const list = ps();
   const pay = paymentsForMonth(key);
-  const paidIds = new Set(pay.map(p => p.player_id || p.playerId));
+  const paidIds = new Set(pay.map(p => p.player_id || p.playerId || p.jugador_id));
   const col = pay.reduce((a, p) => a + Number(p.amount || p.monto || 0), 0);
   const expected = list.length * fee(currentSchoolId(), key);
   const pending = Math.max(0, expected - col);
@@ -752,11 +763,11 @@ function settings() {
 
     <div class="card section">
       <h2>🏫 Sedes / Escuelas</h2>
-      ${data.schools.map((x) => `
+      ${data.schools.length ? data.schools.map((x) => `
         <div class="row">
           <div class="info"><b>${esc(x.name || x.nombre)}</b></div>
         </div>
-      `).join('')}
+      `).join('') : '<div class="empty">Sin escuelas. Agrega una abajo.</div>'}
       <div class="actions">
         <button class="btn green" type="button" onclick="addSchool()">＋ Agregar sede</button>
       </div>
@@ -765,7 +776,7 @@ function settings() {
 }
 
 /* =========================================================
-   FORMULARIOS Y OPERACIONES (SUPABASE)
+   FORMULARIOS Y OPERACIONES (SUPABASE ADAPTATIVO)
    ========================================================= */
 
 function openPlayer(idValue) {
@@ -831,7 +842,8 @@ async function quickPay(playerId, key = monthKey()) {
     return;
   }
 
-  const { error } = await supabaseClient.from('pagos').insert([{
+  // Intenta insertar con schema en inglés o español
+  let { error } = await supabaseClient.from('pagos').insert([{
     player_id: playerId,
     school_id: currentSchoolId(),
     amount: fee(currentSchoolId(), key),
@@ -839,6 +851,17 @@ async function quickPay(playerId, key = monthKey()) {
     method: 'Efectivo',
     created_at: new Date().toISOString()
   }]);
+
+  if (error) {
+    const res = await supabaseClient.from('pagos').insert([{
+      jugador_id: playerId,
+      escuela_id: currentSchoolId(),
+      monto: fee(currentSchoolId(), key),
+      month_key: key,
+      medio_pago: 'Efectivo'
+    }]);
+    error = res.error;
+  }
 
   if (error) {
     alert('Error guardando pago: ' + error.message);
@@ -853,19 +876,37 @@ async function saveForm() {
     const name = document.getElementById('f_name').value.trim();
     if (!name) return alert('Ingresá el nombre del jugador.');
 
-    const payload = {
+    const schoolId = currentSchoolId();
+
+    // Intentar variante 1: Schema en Inglés
+    let payload = {
       name: name,
       category: document.getElementById('f_cat').value.trim(),
-      birth: document.getElementById('f_birth').value,
+      birth: document.getElementById('f_birth').value || null,
       tutor: document.getElementById('f_tutor').value.trim(),
       phone: document.getElementById('f_phone').value.trim(),
-      school_id: currentSchoolId(),
       active: document.getElementById('f_active').value === 'true'
     };
-
+    if (schoolId) payload.school_id = schoolId;
     if (editId) payload.id = editId;
 
-    const { error } = await supabaseClient.from('players').upsert(payload);
+    let { error } = await supabaseClient.from('players').upsert(payload);
+
+    // Intentar variante 2 si falla por nombres de columna
+    if (error && error.message.includes("Could not find")) {
+      let payloadEs = {
+        nombre: name,
+        categoria: document.getElementById('f_cat').value.trim(),
+        telefono: document.getElementById('f_phone').value.trim(),
+        tutor: document.getElementById('f_tutor').value.trim()
+      };
+      if (schoolId) payloadEs.escuela_id = schoolId;
+      if (editId) payloadEs.id = editId;
+
+      const res = await supabaseClient.from('players').upsert(payloadEs);
+      error = res.error;
+    }
+
     if (error) alert('Error al guardar jugador: ' + error.message);
     else await reloadAllData();
 
@@ -876,15 +917,25 @@ async function saveForm() {
 
     if (!pid || !key || !amount) return alert('Completa todos los campos obligatorios.');
 
-    const { error } = await supabaseClient.from('pagos').insert([{
+    let { error } = await supabaseClient.from('pagos').insert([{
       player_id: pid,
       school_id: currentSchoolId(),
       month_key: key,
       amount: amount,
       method: document.getElementById('f_method').value,
-      note: document.getElementById('f_note').value.trim(),
-      created_at: new Date().toISOString()
+      note: document.getElementById('f_note').value.trim()
     }]);
+
+    if (error) {
+      const res = await supabaseClient.from('pagos').insert([{
+        jugador_id: pid,
+        escuela_id: currentSchoolId(),
+        month_key: key,
+        monto: amount,
+        medio_pago: document.getElementById('f_method').value
+      }]);
+      error = res.error;
+    }
 
     if (error) alert('Error al guardar el pago: ' + error.message);
     else await reloadAllData();
@@ -899,11 +950,20 @@ async function saveFee() {
   const key = monthKey();
   if (!v) return alert('Ingresa un monto válido.');
 
-  const { error } = await supabaseClient.from('fees').upsert({
+  let { error } = await supabaseClient.from('fees').upsert({
     school_id: currentSchoolId(),
     month_key: key,
     amount: v
   });
+
+  if (error) {
+    const res = await supabaseClient.from('fees').upsert({
+      escuela_id: currentSchoolId(),
+      month_key: key,
+      monto: v
+    });
+    error = res.error;
+  }
 
   if (error) alert('Error al actualizar cuota: ' + error.message);
   else {
@@ -916,7 +976,12 @@ async function saveFee() {
 async function addSchool() {
   const n = prompt('Nombre de la nueva sede / escuela:');
   if (n && n.trim()) {
-    const { error } = await supabaseClient.from('schools').insert([{ name: n.trim() }]);
+    let { error } = await supabaseClient.from('schools').insert([{ name: n.trim() }]);
+    if (error) {
+      const res = await supabaseClient.from('schools').insert([{ nombre: n.trim() }]);
+      error = res.error;
+    }
+
     if (error) alert('Error agregando escuela: ' + error.message);
     else {
       await reloadAllData();
@@ -936,7 +1001,7 @@ function closeModal() { document.getElementById('modal').classList.remove('show'
 function receipt(paymentId) {
   const pmt = data.payments.find(x => String(x.id) === String(paymentId));
   if (!pmt) return;
-  const p = data.players.find(x => String(x.id) === String(pmt.player_id || pmt.playerId)) || {};
+  const p = data.players.find(x => String(x.id) === String(pmt.player_id || pmt.playerId || pmt.jugador_id)) || {};
 
   const html = `
     <!doctype html>
@@ -964,10 +1029,15 @@ function receipt(paymentId) {
 }
 
 function exportCSV(key) {
-  const rows = data.payments.filter(p => String(p.school_id || p.school) === String(currentSchoolId()) && (!key || p.month_key === key));
+  const rows = data.payments.filter(p => {
+    const sId = currentSchoolId();
+    const pSchool = p.school_id || p.school || p.escuela_id;
+    return (!sId || String(pSchool) === String(sId)) && (!key || p.month_key === key);
+  });
+
   const head = ['Fecha', 'Mes', 'Jugador', 'Importe', 'Medio de Pago'];
   const out = [head, ...rows.map(x => {
-    const p = data.players.find(q => String(q.id) === String(x.player_id || x.playerId)) || {};
+    const p = data.players.find(q => String(q.id) === String(x.player_id || x.playerId || x.jugador_id)) || {};
     return [formatDate(x.created_at || x.date), x.month_key, p.name || p.nombre || '', x.amount || x.monto, x.method || x.medio_pago || ''];
   })];
 
