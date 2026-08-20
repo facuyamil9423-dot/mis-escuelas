@@ -1,1056 +1,145 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Mis Escuelas ⚽ v3.2</title>
-
-<style>
-:root{
-  --bg:#f3f4f6;
-  --card:#fff;
-  --text:#111827;
-  --muted:#6b7280;
-  --green:#15803d;
-  --red:#dc2626;
-  --blue:#2563eb;
-  --line:#e5e7eb;
-  --amber:#b45309;
-}
-
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  padding-bottom:88px;
-}
-
-header{
-  background:#111827;
-  color:#fff;
-  padding:22px 18px 18px;
-  border-radius:0 0 24px 24px;
-}
-
-header h1{
-  margin:0;
-  font-size:26px;
-}
-
-header p{
-  margin:5px 0 0;
-  color:#cbd5e1;
-  font-size:14px;
-}
-
-main{
-  max-width:760px;
-  margin:auto;
-  padding:15px;
-}
-
-.selector,.card{
-  background:var(--card);
-  border-radius:16px;
-  box-shadow:0 2px 10px #0000000b;
-}
-
-.selector{
-  padding:12px;
-  margin-bottom:14px;
-}
-
-select,input{
-  width:100%;
-  padding:12px;
-  border:1px solid var(--line);
-  border-radius:11px;
-  background:#fff;
-  font:inherit;
-}
-
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-.card{
-  padding:15px;
-}
-
-.metric{
-  font-size:23px;
-  font-weight:800;
-  margin-top:4px;
-}
-
-.label{
-  font-size:12px;
-  color:var(--muted);
-}
-
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-  margin:14px 0;
-}
-
-.btn{
-  border:0;
-  border-radius:11px;
-  padding:12px;
-  font:inherit;
-  font-weight:750;
-  background:#111827;
-  color:#fff;
-  cursor:pointer;
-}
-
-.green{background:var(--green)}
-.blue{background:var(--blue)}
-.danger{background:#b91c1c}
-.amber{background:var(--amber)}
-
-.ghost{
-  background:#fff;
-  color:#111827;
-  border:1px solid var(--line);
-}
-
-.section{
-  margin-top:14px;
-}
-
-.section h2{
-  font-size:18px;
-  margin:0 0 10px;
-}
-
-.row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:12px 0;
-  border-bottom:1px solid var(--line);
-}
-
-.row:last-child{
-  border-bottom:0;
-}
-
-.row .info{
-  min-width:0;
-}
-
-.row b{
-  display:block;
-}
-
-.badge{
-  display:inline-block;
-  padding:5px 9px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:800;
-  white-space:nowrap;
-}
-
-.paid{
-  background:#dcfce7;
-  color:#166534;
-}
-
-.warn{
-  background:#fef3c7;
-  color:#92400e;
-}
-
-.search{
-  margin-bottom:10px;
-}
-
-.empty{
-  text-align:center;
-  color:var(--muted);
-  padding:24px 8px;
-}
-
-.modal{
-  display:none;
-  position:fixed;
-  z-index:20;
-  inset:0;
-  background:#0008;
-  align-items:flex-end;
-  padding:0;
-}
-
-.modal.show{
-  display:flex;
-}
-
-.sheet{
-  background:#fff;
-  width:100%;
-  max-width:760px;
-  margin:auto;
-  border-radius:22px 22px 0 0;
-  padding:20px;
-  max-height:92vh;
-  overflow:auto;
-}
-
-.sheet h2{
-  margin-top:0;
-}
-
-.field{
-  margin:10px 0;
-}
-
-.field label{
-  display:block;
-  font-size:13px;
-  font-weight:700;
-  margin-bottom:5px;
-}
-
-nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  background:#fff;
-  border-top:1px solid var(--line);
-  display:flex;
-  justify-content:space-around;
-  padding:8px 4px calc(8px + env(safe-area-inset-bottom));
-  z-index:10;
-}
-
-nav button{
-  border:0;
-  background:none;
-  color:#6b7280;
-  font:inherit;
-  font-size:11px;
-  cursor:pointer;
-}
-
-nav button.active{
-  color:#111827;
-  font-weight:800;
-}
-
-nav span{
-  display:block;
-  font-size:20px;
-  margin-bottom:2px;
-}
-
-.table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-
-.table th,
-.table td{
-  padding:9px 6px;
-  border-bottom:1px solid var(--line);
-  text-align:left;
-}
-
-.table th{
-  color:var(--muted);
-  font-size:11px;
-  text-transform:uppercase;
-}
-
-.right{
-  text-align:right!important;
-}
-
-.reportbar{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:9px;
-  margin-bottom:12px;
-}
-
-.mini{
-  background:#f9fafb;
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:10px;
-}
-
-.mini b{
-  display:block;
-  font-size:16px;
-  margin-top:2px;
-}
-
-.two{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-@media(min-width:600px){
-  .modal{
-    align-items:center;
-    padding:20px;
-  }
-  .sheet{
-    border-radius:20px;
-  }
-  .actions{
-    grid-template-columns:1fr 1fr 1fr;
-  }
-  .reportbar{
-    grid-template-columns:repeat(4,1fr);
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardar Jugador - Supabase</title>
+  <!-- Carga del SDK oficial de Supabase desde CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+    button:disabled {
+      background-color: #94d3a2;
+    }
+    #mensaje {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .exito { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+  </style>
 </head>
-
 <body>
 
-<header>
-  <h1>⚽ Mis Escuelas</h1>
-  <p>Gestión de jugadores, cuotas y reportes</p>
-</header>
+  <h2>Registro de Jugador</h2>
 
-<main>
-  <div class="selector">
-    <div class="small">ESCUELA / SEDE</div>
-    <select id="school" onchange="render()"></select>
-  </div>
-
-  <div id="app"><div class="empty">Cargando datos...</div></div>
-</main>
-
-<div class="modal" id="modal">
-  <div class="sheet">
-    <h2 id="modalTitle"></h2>
-    <div id="form"></div>
-    <div class="actions">
-      <button class="btn green" type="button" onclick="saveForm()">Guardar</button>
-      <button class="btn" type="button" onclick="closeModal()">Cancelar</button>
+  <form id="jugadorForm">
+    <div class="form-group">
+      <label for="nombre">Nombre:</label>
+      <input type="text" id="nombre" name="nombre" required>
     </div>
-  </div>
-</div>
 
-<nav>
-  <button type="button" id="nav-home" class="active" onclick="setView('home')">
-    <span>🏠</span>Inicio
-  </button>
-  <button type="button" id="nav-players" onclick="setView('players')">
-    <span>👥</span>Jugadores
-  </button>
-  <button type="button" id="nav-payments" onclick="setView('payments')">
-    <span>💰</span>Cuotas
-  </button>
-  <button type="button" id="nav-reports" onclick="setView('reports')">
-    <span>📊</span>Reportes
-  </button>
-  <button type="button" id="nav-settings" onclick="setView('settings')">
-    <span>⚙️</span>Opciones
-  </button>
-</nav>
+    <div class="form-group">
+      <label for="apellido">Apellido:</label>
+      <input type="text" id="apellido" name="apellido">
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
+    <div class="form-group">
+      <label for="fecha_nacimiento">Fecha de Nacimiento (Opcional):</label>
+      <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
+    </div>
 
-<script>
-const SUPABASE_URL = 'https://inehoqxikbsuhguxxngz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h';
+    <button type="submit" id="btnGuardar">Guardar Jugador</button>
+  </form>
 
-let supabaseClient = null;
+  <div id="mensaje"></div>
 
-let data = {
-  schools: [],
-  players: [],
-  fees: [],
-  payments: []
-};
+  <script>
+    // 1. Configuración de Supabase (Reemplaza con tus credenciales)
+    const SUPABASE_URL = 'https://tu-proyecto.supabase.co';
+    const SUPABASE_ANON_KEY = 'tu-anon-key-aqui';
 
-let currentView = 'home';
-let editId = null;
-let formType = null;
-let reportMonth = monthKey();
-let showInactive = false;
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* =========================================================
-   INICIALIZACIÓN
-   ========================================================= */
-
-async function init() {
-  try {
-    if (window.supabase) {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    } else {
-      alert('No se pudo cargar Supabase. Verifica tu conexión.');
-      return;
-    }
-
-    await reloadAllData();
-
-    if (data.schools.length === 0) {
-      // Intenta insertar con 'name' o 'nombre'
-      let { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
-      if (error) {
-        const res = await supabaseClient.from('schools').insert([{ nombre: 'Sede Principal' }]).select();
-        newS = res.data;
+    // 2. Función para sanitizar campos: convierte cadenas vacías ("") a null
+    function sanitizarDatos(datos) {
+      const datosLimpios = {};
+      for (const key in datos) {
+        if (typeof datos[key] === 'string' && datos[key].trim() === '') {
+          datosLimpios[key] = null;
+        } else {
+          datosLimpios[key] = datos[key];
+        }
       }
-      if (newS) data.schools = newS;
+      return datosLimpios;
     }
 
-    renderSchoolOptions();
-    render();
-  } catch (err) {
-    console.error("Error al inicializar:", err);
-    document.getElementById('app').innerHTML = `<div class="empty">Error de inicialización: ${err.message}</div>`;
-  }
-}
-
-async function reloadAllData() {
-  if (!supabaseClient) return;
-
-  const [s, p, f, pay] = await Promise.all([
-    supabaseClient.from('schools').select('*'),
-    supabaseClient.from('players').select('*'),
-    supabaseClient.from('fees').select('*'),
-    supabaseClient.from('pagos').select('*')
-  ]);
-
-  data.schools = s.data || [];
-  data.players = p.data || [];
-  data.fees = f.data || [];
-  data.payments = pay.data || [];
-}
-
-function renderSchoolOptions() {
-  const select = document.getElementById('school');
-  if (!select) return;
-  
-  if (data.schools.length === 0) {
-    select.innerHTML = '<option value="">Sin escuelas cargadas</option>';
-    return;
-  }
-
-  select.innerHTML = data.schools
-    .map(s => `<option value="${s.id}">${esc(s.name || s.nombre || 'Sede sin nombre')}</option>`)
-    .join('');
-}
-
-function currentSchoolId() {
-  const select = document.getElementById('school');
-  return select && select.value ? select.value : (data.schools[0]?.id || null);
-}
-
-function currentSchoolName() {
-  const s = data.schools.find(x => String(x.id) === String(currentSchoolId()));
-  return s ? (s.name || s.nombre) : '';
-}
-
-/* =========================================================
-   HELPERS & FORMATO
-   ========================================================= */
-
-function money(n) {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(Number(n) || 0);
-}
-
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
-
-function monthKey(d = new Date()) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
-
-function monthName(key = monthKey()) {
-  const parts = key.split('-').map(Number);
-  return new Date(parts[0], parts[1] - 1, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-}
-
-function formatDate(v) {
-  if (!v) return '';
-  const d = new Date(v);
-  return isNaN(d) ? String(v) : d.toLocaleDateString('es-AR');
-}
-
-function getPlayerSchoolId(p) {
-  return p.school_id || p.school || p.escuela_id || p.escuela;
-}
-
-/* =========================================================
-   REGLAS DE NEGOCIO
-   ========================================================= */
-
-function ps() {
-  const sId = currentSchoolId();
-  return data.players.filter(p => (!sId || String(getPlayerSchoolId(p)) === String(sId)) && p.active !== false);
-}
-
-function allSchoolPlayers() {
-  const sId = currentSchoolId();
-  return data.players.filter(p => !sId || String(getPlayerSchoolId(p)) === String(sId));
-}
-
-function fee(sId = currentSchoolId(), key = monthKey()) {
-  const item = data.fees.find(f => String(f.school_id || f.school || f.escuela_id) === String(sId) && f.month_key === key);
-  if (item) return Number(item.amount || item.monto);
-  const gen = data.fees.find(f => String(f.school_id || f.school || f.escuela_id) === String(sId));
-  return gen ? Number(gen.amount || gen.monto) : 20000;
-}
-
-function paymentFor(playerId, key = monthKey()) {
-  return data.payments.find(p => String(p.player_id || p.playerId || p.jugador_id) === String(playerId) && p.month_key === key);
-}
-
-function paymentsForMonth(key = reportMonth) {
-  const sId = currentSchoolId();
-  return data.payments.filter(p => (!sId || String(p.school_id || p.school || p.escuela_id) === String(sId)) && p.month_key === key);
-}
-
-/* =========================================================
-   VISTAS Y RENDER
-   ========================================================= */
-
-function render() {
-  const app = document.getElementById('app');
-  if (!app) return;
-
-  if (currentView === 'home') home();
-  else if (currentView === 'players') players();
-  else if (currentView === 'payments') payments();
-  else if (currentView === 'reports') reports();
-  else if (currentView === 'settings') settings();
-}
-
-function setView(v) {
-  currentView = v;
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('nav-' + v);
-  if (btn) btn.classList.add('active');
-  render();
-}
-
-function home() {
-  const list = ps();
-  const key = monthKey();
-  const paid = list.filter(p => paymentFor(p.id, key)).length;
-  const collected = paymentsForMonth(key).reduce((a, p) => a + Number(p.amount || p.monto || 0), 0);
-  const expected = list.length * fee(currentSchoolId(), key);
-  const pending = Math.max(0, expected - collected);
-
-  document.getElementById('app').innerHTML = `
-    <div class="grid">
-      <div class="card"><div class="label">Jugadores activos</div><div class="metric">${list.length}</div></div>
-      <div class="card"><div class="label">Pagaron (${esc(monthName(key))})</div><div class="metric">${paid}</div></div>
-      <div class="card"><div class="label">Recaudado</div><div class="metric">${money(collected)}</div></div>
-      <div class="card"><div class="label">Pendiente est.</div><div class="metric">${money(pending)}</div></div>
-    </div>
-
-    <div class="actions">
-      <button class="btn green" type="button" onclick="openPlayer()">＋ Agregar jugador</button>
-      <button class="btn blue" type="button" onclick="openPayment()">✓ Registrar pago</button>
-      <button class="btn amber" type="button" onclick="setView('reports')">📊 Ver reporte</button>
-    </div>
-
-    <div class="card section">
-      <h2>📅 Cuotas pendientes de ${esc(monthName(key))}</h2>
-      ${pendingRows(list, key)}
-    </div>
-  `;
-}
-
-function pendingRows(list, key) {
-  const pend = list.filter(p => !paymentFor(p.id, key));
-  if (!pend.length) return `<div class="empty">🎉 Todos los jugadores están al día este mes.</div>`;
-
-  return pend.map(p => `
-    <div class="row">
-      <div class="info">
-        <b>${esc(p.name || p.nombre)}</b>
-        <span class="small">${esc(p.category || p.categoria || 'Sin cat.')}</span>
-      </div>
-      <button class="btn green" type="button" style="padding:8px 10px" onclick="quickPay('${p.id}')">Pagó</button>
-    </div>
-  `).join('');
-}
-
-function players() {
-  const list = allSchoolPlayers();
-  document.getElementById('app').innerHTML = `
-    <div class="actions">
-      <button class="btn green" type="button" onclick="openPlayer()">＋ Nuevo jugador</button>
-      <button class="btn ghost" type="button" onclick="toggleInactive()">${showInactive ? '👁 Ver sólo activos' : '👁 Ver todos'}</button>
-    </div>
-    <input class="search" id="search" placeholder="🔎 Buscar jugador..." oninput="filterPlayers()">
-    <div class="card" id="playerList">${playerRows(list)}</div>
-  `;
-}
-
-function toggleInactive() {
-  showInactive = !showInactive;
-  players();
-}
-
-function playerRows(list) {
-  if (!list.length) return `<div class="empty">No hay jugadores cargados en esta sede.</div>`;
-  let view = showInactive ? list : list.filter(p => p.active !== false);
-  if (!view.length) return `<div class="empty">No hay jugadores activos.</div>`;
-
-  return view.map(p => `
-    <div class="row">
-      <div class="info">
-        <b>${esc(p.name || p.nombre)} ${p.active === false ? '<span class="badge warn">INACTIVO</span>' : ''}</b>
-        <span class="small">${esc(p.category || p.categoria || 'Sin cat.')} · ${esc(p.phone || p.telefono || 'Sin tel.')}</span>
-      </div>
-      <button class="btn ghost" type="button" style="padding:8px 10px" onclick="openPlayer('${p.id}')">Editar</button>
-    </div>
-  `).join('');
-}
-
-function filterPlayers() {
-  const input = document.getElementById('search');
-  if (!input) return;
-  const q = input.value.toLowerCase();
-  const filtered = allSchoolPlayers().filter(p =>
-    ((p.name || p.nombre || '') + ' ' + (p.category || p.categoria || '') + ' ' + (p.phone || p.telefono || '')).toLowerCase().includes(q)
-  );
-  document.getElementById('playerList').innerHTML = playerRows(filtered);
-}
-
-function payments() {
-  const key = monthKey();
-  document.getElementById('app').innerHTML = `
-    <div class="card">
-      <div class="two">
-        <div class="field">
-          <label>Mes a consultar</label>
-          <input type="month" id="payMonth" value="${key}" onchange="renderPaymentsMonth()">
-        </div>
-        <div class="field">
-          <label>Cuota configurada</label>
-          <input value="${money(fee(currentSchoolId(), key))}" disabled>
-        </div>
-      </div>
-    </div>
-    <div id="paymentsBody" class="section"></div>
-  `;
-  renderPaymentsMonth();
-}
-
-function renderPaymentsMonth() {
-  const monthInput = document.getElementById('payMonth');
-  const key = monthInput?.value || monthKey();
-  const list = ps();
-
-  const rows = list.map(p => {
-    const x = paymentFor(p.id, key);
-    if (x) {
-      return `
-        <div class="row">
-          <div class="info">
-            <b>${esc(p.name || p.nombre)}</b>
-            <span class="small">${money(x.amount || x.monto)} · ${esc(x.method || x.medio_pago || 'Efectivo')} · ${formatDate(x.created_at || x.date)}</span>
-          </div>
-          <div>
-            <span class="badge paid">PAGADO</span>
-            <button class="btn ghost" type="button" style="padding:6px 9px;margin-left:4px" onclick="receipt('${x.id}')">🧾</button>
-          </div>
-        </div>
-      `;
-    }
-    return `
-      <div class="row">
-        <div class="info">
-          <b>${esc(p.name || p.nombre)}</b>
-          <span class="small" style="color:var(--red)">Sin pago en este mes</span>
-        </div>
-        <button class="btn green" type="button" style="padding:8px 10px" onclick="quickPay('${p.id}','${key}')">Pagó</button>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('paymentsBody').innerHTML = `
-    <div class="actions">
-      <button class="btn blue" type="button" onclick="openPayment(null,'${key}')">＋ Registrar pago</button>
-      <button class="btn ghost" type="button" onclick="exportCSV('${key}')">📥 Exportar CSV</button>
-    </div>
-    <div class="card">
-      <h2>Estadísticas de ${esc(monthName(key))}</h2>
-      ${rows || '<div class="empty">No hay jugadores activos en esta sede.</div>'}
-    </div>
-  `;
-}
-
-function reports() {
-  const key = reportMonth || monthKey();
-  const list = ps();
-  const pay = paymentsForMonth(key);
-  const paidIds = new Set(pay.map(p => p.player_id || p.playerId || p.jugador_id));
-  const col = pay.reduce((a, p) => a + Number(p.amount || p.monto || 0), 0);
-  const expected = list.length * fee(currentSchoolId(), key);
-  const pending = Math.max(0, expected - col);
-  const rate = list.length ? Math.round((paidIds.size / list.length) * 100) : 0;
-
-  let methods = {};
-  pay.forEach(p => {
-    const m = p.method || p.medio_pago || 'Efectivo';
-    methods[m] = (methods[m] || 0) + Number(p.amount || p.monto || 0);
-  });
-
-  document.getElementById('app').innerHTML = `
-    <div class="card">
-      <div class="field">
-        <label>Mes de reporte</label>
-        <input type="month" id="reportMonth" value="${key}" onchange="reportMonth=this.value; reports();">
-      </div>
-    </div>
-
-    <div class="reportbar section">
-      <div class="mini"><span class="small">Jugadores</span><b>${list.length}</b></div>
-      <div class="mini"><span class="small">Pagaron</span><b>${paidIds.size} (${rate}%)</b></div>
-      <div class="mini"><span class="small">Recaudado</span><b>${money(col)}</b></div>
-      <div class="mini"><span class="small">Pendiente</span><b>${money(pending)}</b></div>
-    </div>
-
-    <div class="card">
-      <h2>📊 Totales por medio de pago</h2>
-      <table class="table">
-        <thead><tr><th>Medio</th><th class="right">Total</th></tr></thead>
-        <tbody>
-        ${Object.keys(methods).length 
-          ? Object.entries(methods).map(([m, v]) => `<tr><td>${esc(m)}</td><td class="right">${money(v)}</td></tr>`).join('') 
-          : '<tr><td colspan="2" class="empty">No hay registros este mes.</td></tr>'}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function settings() {
-  const sId = currentSchoolId();
-  const key = monthKey();
-
-  document.getElementById('app').innerHTML = `
-    <div class="card">
-      <h2>⚙️ Configurar cuota actual</h2>
-      <div class="field">
-        <label>Monto cuota (${esc(monthName(key))})</label>
-        <input id="fee" type="number" inputmode="decimal" value="${fee(sId, key)}">
-      </div>
-      <button class="btn green" type="button" style="width:100%" onclick="saveFee()">Guardar cuota</button>
-    </div>
-
-    <div class="card section">
-      <h2>🏫 Sedes / Escuelas</h2>
-      ${data.schools.length ? data.schools.map((x) => `
-        <div class="row">
-          <div class="info"><b>${esc(x.name || x.nombre)}</b></div>
-        </div>
-      `).join('') : '<div class="empty">Sin escuelas. Agrega una abajo.</div>'}
-      <div class="actions">
-        <button class="btn green" type="button" onclick="addSchool()">＋ Agregar sede</button>
-      </div>
-    </div>
-  `;
-}
-
-/* =========================================================
-   FORMULARIOS Y OPERACIONES (SUPABASE ADAPTATIVO)
-   ========================================================= */
-
-function openPlayer(idValue) {
-  editId = idValue || null;
-  formType = 'player';
-  const p = idValue ? data.players.find(x => String(x.id) === String(idValue)) || {} : {};
-
-  document.getElementById('modalTitle').textContent = idValue ? 'Editar jugador' : 'Nuevo jugador';
-  document.getElementById('form').innerHTML = `
-    <div class="field"><label>Nombre y Apellido *</label><input id="f_name" value="${esc(p.name || p.nombre || '')}"></div>
-    <div class="field"><label>Categoría</label><input id="f_cat" placeholder="Ej. 2012 / Sub 15" value="${esc(p.category || p.categoria || '')}"></div>
-    <div class="field"><label>Fecha de Nacimiento</label><input id="f_birth" type="date" value="${esc(p.birth || p.fecha_nacimiento || '')}"></div>
-    <div class="field"><label>Tutor / Responsable</label><input id="f_tutor" value="${esc(p.tutor || '')}"></div>
-    <div class="field"><label>Teléfono</label><input id="f_phone" inputmode="tel" value="${esc(p.phone || p.telefono || '')}"></div>
-    <div class="field">
-      <label>Estado</label>
-      <select id="f_active">
-        <option value="true" ${p.active !== false ? 'selected' : ''}>Activo</option>
-        <option value="false" ${p.active === false ? 'selected' : ''}>Inactivo</option>
-      </select>
-    </div>
-  `;
-  showModal();
-}
-
-function openPayment(playerId = null, key = monthKey()) {
-  formType = 'payment';
-  editId = null;
-  const list = ps();
-
-  if (!list.length) {
-    alert('Primero debes crear al menos un jugador activo.');
-    return;
-  }
-
-  document.getElementById('modalTitle').textContent = 'Registrar pago';
-  document.getElementById('form').innerHTML = `
-    <div class="field">
-      <label>Jugador *</label>
-      <select id="f_player">
-        ${list.map(p => `<option value="${p.id}" ${String(p.id) === String(playerId) ? 'selected' : ''}>${esc(p.name || p.nombre)}</option>`).join('')}
-      </select>
-    </div>
-    <div class="field"><label>Mes</label><input id="f_month" type="month" value="${key}"></div>
-    <div class="field"><label>Importe</label><input id="f_amount" type="number" inputmode="decimal" value="${fee(currentSchoolId(), key)}"></div>
-    <div class="field">
-      <label>Medio de pago</label>
-      <select id="f_method">
-        <option>Efectivo</option>
-        <option>Transferencia</option>
-        <option>Mercado Pago</option>
-        <option>Otro</option>
-      </select>
-    </div>
-    <div class="field"><label>Observaciones</label><input id="f_note" placeholder="Opcional"></div>
-  `;
-  showModal();
-}
-
-async function quickPay(playerId, key = monthKey()) {
-  if (paymentFor(playerId, key)) {
-    alert('Este jugador ya figura con la cuota pagada en este mes.');
-    return;
-  }
-
-  // Intenta insertar con schema en inglés o español
-  let { error } = await supabaseClient.from('pagos').insert([{
-    player_id: playerId,
-    school_id: currentSchoolId(),
-    amount: fee(currentSchoolId(), key),
-    month_key: key,
-    method: 'Efectivo',
-    created_at: new Date().toISOString()
-  }]);
-
-  if (error) {
-    const res = await supabaseClient.from('pagos').insert([{
-      jugador_id: playerId,
-      escuela_id: currentSchoolId(),
-      monto: fee(currentSchoolId(), key),
-      month_key: key,
-      medio_pago: 'Efectivo'
-    }]);
-    error = res.error;
-  }
-
-  if (error) {
-    alert('Error guardando pago: ' + error.message);
-  } else {
-    await reloadAllData();
-    render();
-  }
-}
-
-async function saveForm() {
-  if (formType === 'player') {
-    const name = document.getElementById('f_name').value.trim();
-    if (!name) return alert('Ingresá el nombre del jugador.');
-
-    const schoolId = currentSchoolId();
-
-    // Intentar variante 1: Schema en Inglés
-    let payload = {
-      name: name,
-      category: document.getElementById('f_cat').value.trim(),
-      birth: document.getElementById('f_birth').value || null,
-      tutor: document.getElementById('f_tutor').value.trim(),
-      phone: document.getElementById('f_phone').value.trim(),
-      active: document.getElementById('f_active').value === 'true'
-    };
-    if (schoolId) payload.school_id = schoolId;
-    if (editId) payload.id = editId;
-
-    let { error } = await supabaseClient.from('players').upsert(payload);
-
-    // Intentar variante 2 si falla por nombres de columna
-    if (error && error.message.includes("Could not find")) {
-      let payloadEs = {
-        nombre: name,
-        categoria: document.getElementById('f_cat').value.trim(),
-        telefono: document.getElementById('f_phone').value.trim(),
-        tutor: document.getElementById('f_tutor').value.trim()
-      };
-      if (schoolId) payloadEs.escuela_id = schoolId;
-      if (editId) payloadEs.id = editId;
-
-      const res = await supabaseClient.from('players').upsert(payloadEs);
-      error = res.error;
-    }
-
-    if (error) alert('Error al guardar jugador: ' + error.message);
-    else await reloadAllData();
-
-  } else if (formType === 'payment') {
-    const pid = document.getElementById('f_player').value;
-    const key = document.getElementById('f_month').value;
-    const amount = Number(document.getElementById('f_amount').value) || 0;
-
-    if (!pid || !key || !amount) return alert('Completa todos los campos obligatorios.');
-
-    let { error } = await supabaseClient.from('pagos').insert([{
-      player_id: pid,
-      school_id: currentSchoolId(),
-      month_key: key,
-      amount: amount,
-      method: document.getElementById('f_method').value,
-      note: document.getElementById('f_note').value.trim()
-    }]);
-
-    if (error) {
-      const res = await supabaseClient.from('pagos').insert([{
-        jugador_id: pid,
-        escuela_id: currentSchoolId(),
-        month_key: key,
-        monto: amount,
-        medio_pago: document.getElementById('f_method').value
-      }]);
-      error = res.error;
-    }
-
-    if (error) alert('Error al guardar el pago: ' + error.message);
-    else await reloadAllData();
-  }
-
-  closeModal();
-  render();
-}
-
-async function saveFee() {
-  const v = Number(document.getElementById('fee').value);
-  const key = monthKey();
-  if (!v) return alert('Ingresa un monto válido.');
-
-  let { error } = await supabaseClient.from('fees').upsert({
-    school_id: currentSchoolId(),
-    month_key: key,
-    amount: v
-  });
-
-  if (error) {
-    const res = await supabaseClient.from('fees').upsert({
-      escuela_id: currentSchoolId(),
-      month_key: key,
-      monto: v
+    // 3. Capturar el envío del formulario
+    const form = document.getElementById('jugadorForm');
+    const mensajeDiv = document.getElementById('mensaje');
+    const btnGuardar = document.getElementById('btnGuardar');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando...';
+      mensajeDiv.style.display = 'none';
+
+      // Extraer datos del formulario
+      const formData = new FormData(form);
+      const rawData = Object.fromEntries(formData.entries());
+
+      // Sanitizar datos ("" -> null)
+      const datosParaEnviar = sanitizarDatos(rawData);
+
+      try {
+        // Guardar en la tabla 'jugadores'
+        const { data, error } = await supabase
+          .from('jugadores')
+          .insert([datosParaEnviar])
+          .select();
+
+        if (error) throw error;
+
+        // Mostrar mensaje de éxito
+        mensajeDiv.className = 'exito';
+        mensajeDiv.textContent = '¡Jugador guardado con éxito!';
+        mensajeDiv.style.display = 'block';
+        form.reset();
+
+      } catch (err) {
+        // Mostrar mensaje de error
+        mensajeDiv.className = 'error';
+        mensajeDiv.textContent = 'Error al guardar: ' + err.message;
+        mensajeDiv.style.display = 'block';
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar Jugador';
+      }
     });
-    error = res.error;
-  }
-
-  if (error) alert('Error al actualizar cuota: ' + error.message);
-  else {
-    alert('Cuota guardada con éxito.');
-    await reloadAllData();
-    render();
-  }
-}
-
-async function addSchool() {
-  const n = prompt('Nombre de la nueva sede / escuela:');
-  if (n && n.trim()) {
-    let { error } = await supabaseClient.from('schools').insert([{ name: n.trim() }]);
-    if (error) {
-      const res = await supabaseClient.from('schools').insert([{ nombre: n.trim() }]);
-      error = res.error;
-    }
-
-    if (error) alert('Error agregando escuela: ' + error.message);
-    else {
-      await reloadAllData();
-      renderSchoolOptions();
-      render();
-    }
-  }
-}
-
-/* =========================================================
-   NAVEGACIÓN & MODALES
-   ========================================================= */
-
-function showModal() { document.getElementById('modal').classList.add('show'); }
-function closeModal() { document.getElementById('modal').classList.remove('show'); }
-
-function receipt(paymentId) {
-  const pmt = data.payments.find(x => String(x.id) === String(paymentId));
-  if (!pmt) return;
-  const p = data.players.find(x => String(x.id) === String(pmt.player_id || pmt.playerId || pmt.jugador_id)) || {};
-
-  const html = `
-    <!doctype html>
-    <html lang="es">
-    <head><meta charset="utf-8"><title>Comprobante</title>
-    <style>body{font-family:Arial;padding:20px;max-width:400px;margin:auto}.box{border:1px solid #ccc;padding:15px;border-radius:8px}.row{display:flex;justify-content:space-between;margin:8px 0}</style>
-    </head>
-    <body>
-      <div class="box">
-        <h2>⚽ ${esc(currentSchoolName())}</h2>
-        <p>Comprobante de Pago</p>
-        <hr>
-        <div class="row"><span>Jugador:</span><b>${esc(p.name || p.nombre || '')}</b></div>
-        <div class="row"><span>Período:</span><b>${esc(pmt.month_key || pmt.monthKey)}</b></div>
-        <div class="row"><span>Monto:</span><b>${money(pmt.amount || pmt.monto)}</b></div>
-        <div class="row"><span>Medio:</span><b>${esc(pmt.method || pmt.medio_pago || 'Efectivo')}</b></div>
-        <br>
-        <button onclick="window.print()">Imprimir comprobante</button>
-      </div>
-    </body>
-    </html>
-  `;
-  const w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); }
-}
-
-function exportCSV(key) {
-  const rows = data.payments.filter(p => {
-    const sId = currentSchoolId();
-    const pSchool = p.school_id || p.school || p.escuela_id;
-    return (!sId || String(pSchool) === String(sId)) && (!key || p.month_key === key);
-  });
-
-  const head = ['Fecha', 'Mes', 'Jugador', 'Importe', 'Medio de Pago'];
-  const out = [head, ...rows.map(x => {
-    const p = data.players.find(q => String(q.id) === String(x.player_id || x.playerId || x.jugador_id)) || {};
-    return [formatDate(x.created_at || x.date), x.month_key, p.name || p.nombre || '', x.amount || x.monto, x.method || x.medio_pago || ''];
-  })];
-
-  const csv = '\ufeff' + out.map(r => r.map(v => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(';')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `pagos-${key || 'todos'}.csv`;
-  a.click();
-}
-
-window.addEventListener('DOMContentLoaded', init);
-</script>
-
+  </script>
 </body>
 </html>
