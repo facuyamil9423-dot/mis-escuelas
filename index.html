@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Mis Escuelas ⚽ v3</title>
+<title>Mis Escuelas ⚽ v3.1</title>
 
 <style>
 :root{
@@ -188,16 +188,6 @@ select,input{
   padding:24px 8px;
 }
 
-.notice{
-  background:#eff6ff;
-  border:1px solid #bfdbfe;
-  color:#1e40af;
-  border-radius:14px;
-  padding:12px;
-  font-size:13px;
-  margin-top:12px;
-}
-
 .modal{
   display:none;
   position:fixed;
@@ -342,7 +332,7 @@ nav span{
 
 <header>
   <h1>⚽ Mis Escuelas</h1>
-  <p>Gestión de jugadores, cuotas y reportes · v3</p>
+  <p>Gestión de jugadores, cuotas y reportes</p>
 </header>
 
 <main>
@@ -359,41 +349,38 @@ nav span{
     <h2 id="modalTitle"></h2>
     <div id="form"></div>
     <div class="actions">
-      <button class="btn green" onclick="saveForm()">Guardar</button>
-      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn green" type="button" onclick="saveForm()">Guardar</button>
+      <button class="btn" type="button" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <nav>
-  <button type="button" class="active" onclick="setView('home',this)">
+  <button type="button" id="nav-home" class="active" onclick="setView('home')">
     <span>🏠</span>Inicio
   </button>
-  <button type="button" onclick="setView('players',this)">
+  <button type="button" id="nav-players" onclick="setView('players')">
     <span>👥</span>Jugadores
   </button>
-  <button type="button" onclick="setView('payments',this)">
+  <button type="button" id="nav-payments" onclick="setView('payments')">
     <span>💰</span>Cuotas
   </button>
-  <button type="button" onclick="setView('reports',this)">
+  <button type="button" id="nav-reports" onclick="setView('reports')">
     <span>📊</span>Reportes
   </button>
-  <button type="button" onclick="setView('settings',this)">
+  <button type="button" id="nav-settings" onclick="setView('settings')">
     <span>⚙️</span>Opciones
   </button>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- CDN Correcto para la última versión bundle de Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
 
 <script>
 const SUPABASE_URL = 'https://inehoqxikbsuhguxxngz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_sy4qDmB2FcYZ6hC_2IWJLA_H9u89I2h';
 
 let supabaseClient = null;
-
-if (typeof window.supabase !== 'undefined') {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-}
 
 let data = {
   schools: [],
@@ -409,27 +396,36 @@ let reportMonth = monthKey();
 let showInactive = false;
 
 /* =========================================================
-   INICIALIZACIÓN
+   INICIALIZACIÓN SEGURO
    ========================================================= */
 
 async function init() {
-  if (!supabaseClient) {
-    alert('Error al conectar con Supabase. Revisa la consola.');
-    return;
+  try {
+    if (window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } else {
+      alert('No se pudo cargar Supabase. Verifica tu conexión a internet.');
+      return;
+    }
+
+    await reloadAllData();
+
+    if (data.schools.length === 0) {
+      const { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
+      if (!error && newS) data.schools = newS;
+    }
+
+    renderSchoolOptions();
+    render();
+  } catch (err) {
+    console.error("Error al inicializar:", err);
+    document.getElementById('app').innerHTML = `<div class="empty">Error de inicialización: ${err.message}</div>`;
   }
-
-  await reloadAllData();
-
-  if (data.schools.length === 0) {
-    const { data: newS, error } = await supabaseClient.from('schools').insert([{ name: 'Sede Principal' }]).select();
-    if (!error && newS) data.schools = newS;
-  }
-
-  renderSchoolOptions();
-  render();
 }
 
 async function reloadAllData() {
+  if (!supabaseClient) return;
+
   const [s, p, f, pay] = await Promise.all([
     supabaseClient.from('schools').select('*'),
     supabaseClient.from('players').select('*'),
@@ -459,7 +455,7 @@ function renderSchoolOptions() {
 
 function currentSchoolId() {
   const select = document.getElementById('school');
-  return select ? select.value : (data.schools[0]?.id || null);
+  return select && select.value ? select.value : (data.schools[0]?.id || null);
 }
 
 function currentSchoolName() {
@@ -536,6 +532,14 @@ function render() {
   else if (currentView === 'settings') settings();
 }
 
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('nav-' + v);
+  if (btn) btn.classList.add('active');
+  render();
+}
+
 function home() {
   const list = ps();
   const key = monthKey();
@@ -553,9 +557,9 @@ function home() {
     </div>
 
     <div class="actions">
-      <button class="btn green" onclick="openPlayer()">＋ Agregar jugador</button>
-      <button class="btn blue" onclick="openPayment()">✓ Registrar pago</button>
-      <button class="btn amber" onclick="setViewByName('reports')">📊 Ver reporte</button>
+      <button class="btn green" type="button" onclick="openPlayer()">＋ Agregar jugador</button>
+      <button class="btn blue" type="button" onclick="openPayment()">✓ Registrar pago</button>
+      <button class="btn amber" type="button" onclick="setView('reports')">📊 Ver reporte</button>
     </div>
 
     <div class="card section">
@@ -575,7 +579,7 @@ function pendingRows(list, key) {
         <b>${esc(p.name || p.nombre)}</b>
         <span class="small">${esc(p.category || p.categoria || 'Sin cat.')}</span>
       </div>
-      <button class="btn green" style="padding:8px 10px" onclick="quickPay('${p.id}')">Pagó</button>
+      <button class="btn green" type="button" style="padding:8px 10px" onclick="quickPay('${p.id}')">Pagó</button>
     </div>
   `).join('');
 }
@@ -584,8 +588,8 @@ function players() {
   const list = allSchoolPlayers();
   document.getElementById('app').innerHTML = `
     <div class="actions">
-      <button class="btn green" onclick="openPlayer()">＋ Nuevo jugador</button>
-      <button class="btn ghost" onclick="toggleInactive()">${showInactive ? '👁 Ver sólo activos' : '👁 Ver todos'}</button>
+      <button class="btn green" type="button" onclick="openPlayer()">＋ Nuevo jugador</button>
+      <button class="btn ghost" type="button" onclick="toggleInactive()">${showInactive ? '👁 Ver sólo activos' : '👁 Ver todos'}</button>
     </div>
     <input class="search" id="search" placeholder="🔎 Buscar jugador..." oninput="filterPlayers()">
     <div class="card" id="playerList">${playerRows(list)}</div>
@@ -608,7 +612,7 @@ function playerRows(list) {
         <b>${esc(p.name || p.nombre)} ${p.active === false ? '<span class="badge warn">INACTIVO</span>' : ''}</b>
         <span class="small">${esc(p.category || p.categoria || 'Sin cat.')} · ${esc(p.phone || p.telefono || 'Sin tel.')}</span>
       </div>
-      <button class="btn ghost" style="padding:8px 10px" onclick="openPlayer('${p.id}')">Editar</button>
+      <button class="btn ghost" type="button" style="padding:8px 10px" onclick="openPlayer('${p.id}')">Editar</button>
     </div>
   `).join('');
 }
@@ -659,7 +663,7 @@ function renderPaymentsMonth() {
           </div>
           <div>
             <span class="badge paid">PAGADO</span>
-            <button class="btn ghost" style="padding:6px 9px;margin-left:4px" onclick="receipt('${x.id}')">🧾</button>
+            <button class="btn ghost" type="button" style="padding:6px 9px;margin-left:4px" onclick="receipt('${x.id}')">🧾</button>
           </div>
         </div>
       `;
@@ -670,15 +674,15 @@ function renderPaymentsMonth() {
           <b>${esc(p.name || p.nombre)}</b>
           <span class="small" style="color:var(--red)">Sin pago en este mes</span>
         </div>
-        <button class="btn green" style="padding:8px 10px" onclick="quickPay('${p.id}','${key}')">Pagó</button>
+        <button class="btn green" type="button" style="padding:8px 10px" onclick="quickPay('${p.id}','${key}')">Pagó</button>
       </div>
     `;
   }).join('');
 
   document.getElementById('paymentsBody').innerHTML = `
     <div class="actions">
-      <button class="btn blue" onclick="openPayment(null,'${key}')">＋ Registrar pago</button>
-      <button class="btn ghost" onclick="exportCSV('${key}')">📥 Exportar CSV</button>
+      <button class="btn blue" type="button" onclick="openPayment(null,'${key}')">＋ Registrar pago</button>
+      <button class="btn ghost" type="button" onclick="exportCSV('${key}')">📥 Exportar CSV</button>
     </div>
     <div class="card">
       <h2>Estadísticas de ${esc(monthName(key))}</h2>
@@ -743,7 +747,7 @@ function settings() {
         <label>Monto cuota (${esc(monthName(key))})</label>
         <input id="fee" type="number" inputmode="decimal" value="${fee(sId, key)}">
       </div>
-      <button class="btn green" style="width:100%" onclick="saveFee()">Guardar cuota</button>
+      <button class="btn green" type="button" style="width:100%" onclick="saveFee()">Guardar cuota</button>
     </div>
 
     <div class="card section">
@@ -754,7 +758,7 @@ function settings() {
         </div>
       `).join('')}
       <div class="actions">
-        <button class="btn green" onclick="addSchool()">＋ Agregar sede</button>
+        <button class="btn green" type="button" onclick="addSchool()">＋ Agregar sede</button>
       </div>
     </div>
   `;
@@ -926,21 +930,6 @@ async function addSchool() {
    NAVEGACIÓN & MODALES
    ========================================================= */
 
-function setView(v, btn) {
-  currentView = v;
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  render();
-}
-
-function setViewByName(v) {
-  currentView = v;
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  const btn = [...document.querySelectorAll('nav button')].find(b => b.textContent.toLowerCase().includes(v === 'reports' ? 'reportes' : v));
-  if (btn) btn.classList.add('active');
-  render();
-}
-
 function showModal() { document.getElementById('modal').classList.add('show'); }
 function closeModal() { document.getElementById('modal').classList.remove('show'); }
 
@@ -990,7 +979,6 @@ function exportCSV(key) {
   a.click();
 }
 
-// Inicialización de la App
 window.addEventListener('DOMContentLoaded', init);
 </script>
 
